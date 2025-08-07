@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Wine Toplists - Best Wines Sweden{% endblock %}
+
+{% block content %}
+<!-- Toplists Hero Section -->
+<div class="toplists-hero py-5 bg-gradient">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold text-wine-red mb-3">
+                    <i class="bi bi-list-ol"></i> Wine Toplists
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Discover curated collections of the best wines from Vivino, available at Systembolaget. 
+                    Each toplist represents a carefully selected group of wines based on specific criteria.
+                </p>
+                
+                <div class="stat-card d-inline-block p-3 bg-white rounded shadow-sm">
+                    <div class="h4 mb-1 text-primary">{{ total_toplists }}</div>
+                    <div class="small text-muted">
+                        {% if current_category %}
+                            {{ current_category|title }} Toplists
+                        {% else %}
+                            Curated Toplists
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 text-lg-end">
+                {% if current_category %}
+                <a href="/toplists" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-x-circle"></i> Show All Categories
+                </a>
+                {% endif %}
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Browse
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toplists Grid -->
+<div class="container py-5">
+    {% if toplists %}
+    <div class="row">
+        {% for toplist in toplists %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="toplist-card card h-100 shadow-sm" style="cursor: pointer;" 
+                 onclick="window.location.href='/toplist/{{ toplist.id }}'">
+                <div class="card-body">
+                    <h5 class="card-title">{{ toplist.name }}</h5>
+                    
+                    {% if toplist.category %}
+                    <div class="mb-3">
+                        {% if toplist.category == 'budget' %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-currency-dollar"></i> {{ toplist.category|title }}
+                        </span>
+                        {% elif toplist.category == 'premium' %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-star"></i> {{ toplist.category|title }}
+                        </span>
+                        {% elif toplist.category == 'natural' %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-flower1"></i> {{ toplist.category|title }}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ toplist.category|title }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if toplist.description %}
+                    <p class="card-text text-muted small">{{ toplist.description[:120] }}{% if toplist.description|length > 120 %}...{% endif %}</p>
+                    {% endif %}
+                    
+                    <!-- Toplist Statistics -->
+                    <div class="toplist-stats mt-3">
+                        <div class="d-flex text-center">
+                            <div class="stat-mini flex-fill px-1">
+                                <div class="h6 mb-0 text-primary">{{ toplist.wine_count }}</div>
+                                <small class="text-muted">Wines</small>
+                            </div>
+                            <div class="stat-mini flex-fill px-1">
+                                <div class="h6 mb-0 text-success">{{ toplist.match_count }}</div>
+                                <small class="text-muted">Matches</small>
+                            </div>
+                            <div class="stat-mini flex-fill px-1">
+                                {% if toplist.avg_rating %}
+                                <div class="h6 mb-0 text-warning">
+                                    <i class="bi bi-star-fill"></i> {{ toplist.avg_rating }}
+                                </div>
+                                <small class="text-muted">Rating</small>
+                                {% else %}
+                                <div class="h6 mb-0 text-muted">N/A</div>
+                                <small class="text-muted">Rating</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <small class="text-primary">
+                        <i class="bi bi-arrow-right"></i> View Wines in This List
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- No Toplists -->
+    <div class="text-center py-5">
+        <i class="bi bi-list-ol text-muted" style="font-size: 3rem;"></i>
+        <h3 class="text-muted mt-3">No toplists available</h3>
+        <p class="text-muted">Wine toplists will appear here once they are created and synced.</p>
+        <a href="/" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Browse All Wines
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Featured Categories Section -->
+{% if toplists %}
+<div class="bg-light py-5">
+    <div class="container">
+        <h3 class="text-center mb-4">Explore by Category</h3>
+        <div class="row">
+            <!-- Budget Category -->
+            {% set budget_lists = all_toplists | selectattr('category', 'equalto', 'budget') | list %}
+            {% if budget_lists %}
+            <div class="col-md-4 mb-3">
+                <div class="category-card text-center p-4 bg-white rounded shadow-sm clickable" 
+                     onclick="window.location.href='/toplists?category=budget'" style="cursor: pointer;">
+                    <div class="category-icon mb-3">
+                        <i class="bi bi-currency-dollar text-success" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5>Budget Wines</h5>
+                    <p class="text-muted small">Great wines that won't break the bank</p>
+                    <span class="badge bg-success">{{ budget_lists | length }} Lists</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Premium Category -->
+            {% set premium_lists = all_toplists | selectattr('category', 'equalto', 'premium') | list %}
+            {% if premium_lists %}
+            <div class="col-md-4 mb-3">
+                <div class="category-card text-center p-4 bg-white rounded shadow-sm clickable" 
+                     onclick="window.location.href='/toplists?category=premium'" style="cursor: pointer;">
+                    <div class="category-icon mb-3">
+                        <i class="bi bi-star text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5>Premium Wines</h5>
+                    <p class="text-muted small">Exceptional wines for special occasions</p>
+                    <span class="badge bg-warning text-dark">{{ premium_lists | length }} Lists</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Natural Category -->
+            {% set natural_lists = all_toplists | selectattr('category', 'equalto', 'natural') | list %}
+            {% if natural_lists %}
+            <div class="col-md-4 mb-3">
+                <div class="category-card text-center p-4 bg-white rounded shadow-sm clickable" 
+                     onclick="window.location.href='/toplists?category=natural'" style="cursor: pointer;">
+                    <div class="category-icon mb-3">
+                        <i class="bi bi-flower1 text-info" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5>Natural Wines</h5>
+                    <p class="text-muted small">Organic and biodynamic selections</p>
+                    <span class="badge bg-info">{{ natural_lists | length }} Lists</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Price Category -->
+            {% set price_lists = all_toplists | selectattr('category', 'equalto', 'price') | list %}
+            {% if price_lists %}
+            <div class="col-md-4 mb-3">
+                <div class="category-card text-center p-4 bg-white rounded shadow-sm clickable" 
+                     onclick="window.location.href='/toplists?category=price'" style="cursor: pointer;">
+                    <div class="category-icon mb-3">
+                        <i class="bi bi-cash-stack text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5>Price Range</h5>
+                    <p class="text-muted small">Wines organized by price categories</p>
+                    <span class="badge bg-primary">{{ price_lists | length }} Lists</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Regional Category -->
+            {% set regional_lists = all_toplists | selectattr('category', 'equalto', 'regional') | list %}
+            {% if regional_lists %}
+            <div class="col-md-4 mb-3">
+                <div class="category-card text-center p-4 bg-white rounded shadow-sm clickable" 
+                     onclick="window.location.href='/toplists?category=regional'" style="cursor: pointer;">
+                    <div class="category-icon mb-3">
+                        <i class="bi bi-globe-europe-africa text-danger" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5>Regional Wines</h5>
+                    <p class="text-muted small">Wines from specific regions and countries</p>
+                    <span class="badge bg-danger">{{ regional_lists | length }} Lists</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Style Category -->
+            {% set style_lists = all_toplists | selectattr('category', 'equalto', 'style') | list %}
+            {% if style_lists %}
+            <div class="col-md-4 mb-3">
+                <div class="category-card text-center p-4 bg-white rounded shadow-sm clickable" 
+                     onclick="window.location.href='/toplists?category=style'" style="cursor: pointer;">
+                    <div class="category-icon mb-3">
+                        <i class="bi bi-palette text-purple" style="font-size: 2rem; color: #6f42c1;"></i>
+                    </div>
+                    <h5>Wine Styles</h5>
+                    <p class="text-muted small">Wines organized by type and style</p>
+                    <span class="badge" style="background-color: #6f42c1; color: white;">{{ style_lists | length }} Lists</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Discovery Category -->
+            {% set discovery_lists = all_toplists | selectattr('category', 'equalto', 'discovery') | list %}
+            {% if discovery_lists %}
+            <div class="col-md-4 mb-3">
+                <div class="category-card text-center p-4 bg-white rounded shadow-sm clickable" 
+                     onclick="window.location.href='/toplists?category=discovery'" style="cursor: pointer;">
+                    <div class="category-icon mb-3">
+                        <i class="bi bi-compass text-info" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5>Discovery</h5>
+                    <p class="text-muted small">Hidden gems and adventurous selections</p>
+                    <span class="badge bg-info">{{ discovery_lists | length }} Lists</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Bestsellers Category -->
+            {% set bestsellers_lists = all_toplists | selectattr('category', 'equalto', 'bestsellers') | list %}
+            {% if bestsellers_lists %}
+            <div class="col-md-4 mb-3">
+                <div class="category-card text-center p-4 bg-white rounded shadow-sm clickable" 
+                     onclick="window.location.href='/toplists?category=bestsellers'" style="cursor: pointer;">
+                    <div class="category-icon mb-3">
+                        <i class="bi bi-trophy text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5>Bestsellers</h5>
+                    <p class="text-muted small">Most popular and trending wines</p>
+                    <span class="badge bg-warning text-dark">{{ bestsellers_lists | length }} Lists</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Add hover effects to toplist cards and category cards
+document.addEventListener('DOMContentLoaded', function() {
+    // Toplist cards
+    const toplistCards = document.querySelectorAll('.toplist-card');
+    toplistCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Category cards
+    const categoryCards = document.querySelectorAll('.category-card.clickable');
+    categoryCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.transition = 'all 0.2s ease';
+            this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
+});
+</script>
+{% endblock %}

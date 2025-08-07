@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Best Wines Sweden - Find Top Rated Wines at Systembolaget{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section bg-primary text-white py-3">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="bi bi-award"></i> Best Wines in Sweden
+                </h1>
+                <p class="lead mb-4">
+                    Discover top-rated wines from Vivino that are available at Systembolaget. 
+                    Filter by price, rating, style, and country to find your perfect bottle.
+                </p>
+            </div>
+            <div class="col-lg-4">
+                <div class="stats-grid">
+                    <div class="stat-card bg-white bg-opacity-10 rounded p-3 mb-3">
+                        <h3 class="h2 mb-1">{{ total_wines }}</h3>
+                        <p class="mb-0">Wine Matches</p>
+                    </div>
+                    <div class="stat-card bg-white bg-opacity-10 rounded p-3 mb-3">
+                        <h3 class="h2 mb-1">{{ total_toplists }}</h3>
+                        <p class="mb-0">Curated Lists</p>
+                    </div>
+                    <div class="stat-card bg-white bg-opacity-10 rounded p-3">
+                        <h3 class="h2 mb-1">{{ avg_rating }}</h3>
+                        <p class="mb-0">Avg Rating</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Panel (Initially Hidden) -->
+<div id="filterPanel" class="filter-panel bg-light py-3" style="display: none;">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h4 class="mb-3">
+                    <i class="bi bi-funnel"></i> Filter Wines
+                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="clearFilters()">
+                        <i class="bi bi-x"></i> Clear All
+                    </button>
+                </h4>
+            </div>
+        </div>
+        
+        <div class="row g-3">
+            <!-- Price Range -->
+            <div class="col-md-3">
+                <label class="form-label">Price Range (SEK)</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" class="form-control" id="minPrice" placeholder="Min">
+                    <span class="input-group-text">-</span>
+                    <input type="number" class="form-control" id="maxPrice" placeholder="Max">
+                </div>
+            </div>
+            
+            <!-- Rating Range -->
+            <div class="col-md-3">
+                <label class="form-label">Rating</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" class="form-control" id="minRating" placeholder="Min" min="0" max="5" step="0.1">
+                    <span class="input-group-text">-</span>
+                    <input type="number" class="form-control" id="maxRating" placeholder="Max" min="0" max="5" step="0.1">
+                </div>
+            </div>
+            
+            <!-- Wine Style -->
+            <div class="col-md-3">
+                <label class="form-label">Wine Style</label>
+                <select class="form-select form-select-sm" id="wineStyle">
+                    <option value="">All Styles</option>
+                </select>
+            </div>
+            
+            <!-- Country -->
+            <div class="col-md-3">
+                <label class="form-label">Country</label>
+                <select class="form-select form-select-sm" id="country">
+                    <option value="">All Countries</option>
+                </select>
+            </div>
+            
+            <!-- Search -->
+            <div class="col-md-6">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control form-control-sm" id="searchTerm" 
+                       placeholder="Wine name, producer, or vintage...">
+            </div>
+            
+            <!-- Sort Options -->
+            <div class="col-md-3">
+                <label class="form-label">Sort By</label>
+                <select class="form-select form-select-sm" id="sortBy">
+                    <option value="rating">Rating</option>
+                    <option value="price">Price</option>
+                    <option value="match_score">Match Score</option>
+                </select>
+            </div>
+            
+            <!-- Sort Order -->
+            <div class="col-md-3">
+                <label class="form-label">Order</label>
+                <select class="form-select form-select-sm" id="sortOrder">
+                    <option value="desc">High to Low</option>
+                    <option value="asc">Low to High</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-12">
+                <button class="btn btn-primary" onclick="applyFilters()">
+                    <i class="bi bi-search"></i> Apply Filters
+                </button>
+                <button class="btn btn-outline-secondary ms-2" onclick="hideFilters()">
+                    <i class="bi bi-x"></i> Hide Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toplists Panel (Initially Hidden) -->
+<div id="toplistPanel" class="bg-light py-3" style="display: none;">
+    <div class="container">
+        <h4 class="mb-3">
+            <i class="bi bi-list-ol"></i> Wine Toplists
+            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="hideToplists()">
+                <i class="bi bi-x"></i> Hide
+            </button>
+        </h4>
+        <div id="toplistGrid" class="row">
+            <!-- Toplists will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Wine Results -->
+<div class="container py-3">
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="text-center py-3" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading wines...</p>
+    </div>
+    
+    <!-- Results Header -->
+    <div id="resultsHeader" class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Recent Wine Discoveries</h2>
+        <small class="text-muted" id="resultsCount">Showing {{ wines|length }} wines</small>
+    </div>
+    
+    <!-- Wine Grid -->
+    <div id="wineGrid" class="row">
+        {% for wine in wines %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="wine-card card h-100">
+                <div class="card-header d-flex justify-content-between align-items-start">
+                    <div class="wine-rating">
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-star-fill"></i> {{ wine.vivino_rating }}
+                        </span>
+                        {% if wine.verified %}
+                        <span class="badge bg-success ms-1">
+                            <i class="bi bi-check-circle"></i> Verified
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="wine-price text-end">
+                        {% if wine.price %}
+                        <strong class="text-primary">{{ "%.0f"|format(wine.price) }} SEK</strong>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Wine Image -->
+                {% if wine.image_url %}
+                <div class="wine-image-container text-center py-3">
+                    <img src="{{ wine.image_url }}" 
+                         alt="{{ wine.vivino_name }}" 
+                         class="wine-bottle-image img-fluid"
+                         style="max-height: 200px; max-width: 120px; object-fit: contain;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="wine-placeholder d-none text-muted">
+                        <i class="bi bi-cup" style="font-size: 3rem;"></i>
+                        <br><small>No image available</small>
+                    </div>
+                </div>
+                {% else %}
+                <div class="wine-image-container text-center py-3">
+                    <div class="wine-placeholder text-muted">
+                        <i class="bi bi-cup" style="font-size: 3rem;"></i>
+                        <br><small>No image available</small>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="card-body">
+                    <h5 class="card-title wine-name">{{ wine.vivino_name }}</h5>
+                    <h6 class="card-subtitle text-muted mb-2"><i class="bi bi-shop"></i> {{ wine.systembolaget_name }}</h6>
+                    
+                    <div class="wine-details mb-2">
+                        {% if wine.vivino_wine_style %}
+                        <span class="badge bg-primary me-1">{{ wine.vivino_wine_style }}</span>
+                        {% elif wine.wine_style %}
+                        <span class="badge bg-secondary me-1">{{ wine.wine_style }}</span>
+                        {% endif %}
+                        
+                        {% if wine.vivino_country %}
+                        <span class="badge bg-outline-info me-1"><i class="bi bi-geo-alt"></i> {{ wine.vivino_country }}</span>
+                        {% elif wine.country %}
+                        <span class="badge bg-outline-secondary me-1">{{ wine.country }}</span>
+                        {% endif %}
+                        
+                        {% if wine.year %}
+                        <span class="badge bg-outline-secondary">{{ wine.year }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Wine Characteristics -->
+                    {% if wine.body or wine.acidity or wine.sweetness %}
+                    <div class="mb-2">
+                        {% if wine.body %}
+                        <span class="badge bg-info me-1">
+                            <i class="bi bi-droplet"></i> 
+                            {% if wine.body <= 2 %}Light{% elif wine.body <= 3 %}Medium{% else %}Full{% endif %} Body
+                        </span>
+                        {% endif %}
+                        {% if wine.acidity %}
+                        <span class="badge bg-warning text-dark me-1">
+                            <i class="bi bi-lightning"></i> 
+                            {% if wine.acidity <= 2 %}Low{% elif wine.acidity <= 3 %}Medium{% else %}High{% endif %} Acidity
+                        </span>
+                        {% endif %}
+                        {% if wine.sweetness %}
+                        <span class="badge bg-danger text-white me-1">
+                            <i class="bi bi-heart"></i> 
+                            {% if wine.sweetness <= 1 %}Bone Dry{% elif wine.sweetness <= 2 %}Dry{% elif wine.sweetness <= 3 %}Off-Dry{% elif wine.sweetness <= 4 %}Medium Sweet{% else %}Sweet{% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if wine.vivino_winery %}
+                    <p class="text-muted small mt-2 mb-1">
+                        <i class="bi bi-house"></i> {{ wine.vivino_winery }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if wine.vivino_region %}
+                    <p class="text-muted small mb-1">
+                        <i class="bi bi-map"></i> {{ wine.vivino_region }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if wine.producer %}
+                    <p class="text-muted small mb-1">
+                        <i class="bi bi-building"></i> {{ wine.producer }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if wine.vivino_alcohol_content %}
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-percent"></i> {{ wine.vivino_alcohol_content }}% vol
+                    </p>
+                    {% elif wine.alcohol_percentage %}
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-percent"></i> {{ wine.alcohol_percentage }}% vol
+                    </p>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="/wine/{{ wine.match_id }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                        <a href="https://systembolaget.se/sortiment/vin/?q={{ wine.product_number }}" 
+                           target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-shop"></i> Buy at Systembolaget
+                        </a>
+                    </div>
+                    
+                    {% if wine.match_score %}
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Match Score: {{ "%.1f"|format(wine.match_score) }}%
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Load More Button -->
+    <div class="text-center mt-4">
+        <button id="loadMoreBtn" class="btn btn-outline-primary" onclick="loadMoreWines()">
+            <i class="bi bi-arrow-down"></i> Load More Wines
+        </button>
+    </div>
+    
+    <!-- No Results -->
+    <div id="noResults" class="text-center py-3" style="display: none;">
+        <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+        <h3 class="text-muted mt-3">No wines found</h3>
+        <p class="text-muted">Try adjusting your filters or search terms.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Load filter options from API
+    async function loadFilterOptions() {
+        try {
+            const response = await fetch('/api/filters/options');
+            const options = await response.json();
+            
+            // Populate wine styles
+            const wineStyleSelect = document.getElementById('wineStyle');
+            if (wineStyleSelect) {
+                options.wine_styles.forEach(style => {
+                    const option = document.createElement('option');
+                    option.value = style;
+                    option.textContent = style;
+                    wineStyleSelect.appendChild(option);
+                });
+            }
+            
+            // Populate countries
+            const countrySelect = document.getElementById('country');
+            if (countrySelect) {
+                options.countries.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country;
+                    option.textContent = country;
+                    countrySelect.appendChild(option);
+                });
+            }
+            
+        } catch (error) {
+            console.error('Error loading filter options:', error);
+        }
+    }
+    
+    // Call loadFilterOptions when the page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadFilterOptions);
+    } else {
+        loadFilterOptions();
+    }
+</script>
+{% endblock %}

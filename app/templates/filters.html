@@ -1,0 +1,609 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Wine Filters - Best Wines Sweden{% endblock %}
+
+{% block content %}
+<!-- Filters Hero Section -->
+<div class="filters-hero py-5 bg-gradient">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold text-wine-red mb-3">
+                    <i class="bi bi-funnel"></i> Wine Filters
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Find your perfect wine using our most useful filters: price, country, grape variety, 
+                    acidity, sweetness, and match quality.
+                </p>
+            </div>
+            
+            <div class="col-lg-4 text-lg-end">
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Browse
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Interface -->
+<div class="container py-5">
+    <form id="wineFiltersForm">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="filters-section mb-4">
+                    <h4 class="filters-section-title">
+                        <i class="bi bi-search"></i> Find Your Perfect Wine
+                    </h4>
+                    
+                    <!-- Row 1: Price Range Dropdowns -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label">
+                                Price Range (SEK)
+                            </label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <select class="form-select" id="minPrice" name="min_price">
+                                        <option value="">Min Price</option>
+                                        <option value="50">50 SEK</option>
+                                        <option value="100">100 SEK</option>
+                                        <option value="150">150 SEK</option>
+                                        <option value="200">200 SEK</option>
+                                        <option value="300">300+ SEK</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <select class="form-select" id="maxPrice" name="max_price">
+                                        <option value="">Max Price</option>
+                                        <option value="100">100 SEK</option>
+                                        <option value="200">200 SEK</option>
+                                        <option value="250">250 SEK</option>
+                                        <option value="300">300 SEK</option>
+                                        <option value="400">400+ SEK</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 2: Wine Style, Acidity, Sweetness -->
+                    <div class="row mb-4">
+                        <!-- Wine Style -->
+                        <div class="col-lg-4 mb-3">
+                            <label for="simplifiedWineStyle" class="form-label">
+                                <i class="bi bi-wine"></i> Wine Style
+                            </label>
+                            <select class="form-select" id="simplifiedWineStyle" name="simplified_wine_style">
+                                <option value="">All Styles</option>
+                                <option value="Red Wine">Red Wine</option>
+                                <option value="White Wine">White Wine</option>
+                                <option value="Rosé Wine">Rosé Wine</option>
+                                <option value="Sparkling Wine">Sparkling Wine</option>
+                                <option value="Dessert Wine">Dessert Wine</option>
+                                <option value="Fortified Wine">Fortified Wine</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Acidity -->
+                        <div class="col-lg-4 mb-3">
+                            <label for="acidity" class="form-label">
+                                <i class="bi bi-droplet"></i> Acidity Level
+                            </label>
+                            <select class="form-select" id="acidity" name="acidity">
+                                <option value="">Any Acidity</option>
+                                {% for option in filter_options.acidity_options %}
+                                <option value="{{ option.value }}">{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Sweetness -->
+                        <div class="col-lg-4 mb-3">
+                            <label for="sweetness" class="form-label">
+                                <i class="bi bi-heart"></i> Sweetness Level
+                            </label>
+                            <select class="form-select" id="sweetness" name="sweetness">
+                                <option value="">Any Sweetness</option>
+                                {% for option in filter_options.sweetness_options %}
+                                <option value="{{ option.value }}">{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 3: Country and Food Pairing -->
+                    <div class="row mb-4">
+                        <!-- Country -->
+                        <div class="col-lg-6 mb-3">
+                            <label for="vivinoCountry" class="form-label">
+                                <i class="bi bi-globe"></i> Country
+                            </label>
+                            <select class="form-select" id="vivinoCountry" name="vivino_country">
+                                <option value="">All Countries</option>
+                                {% for country in filter_options.vivino_countries %}
+                                <option value="{{ country }}">{{ country }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Food Pairing -->
+                        <div class="col-lg-6 mb-3">
+                            <label for="foodPairing" class="form-label">
+                                <i class="bi bi-egg-fried"></i> Food Pairing
+                            </label>
+                            <select class="form-select" id="foodPairing" name="food_pairing">
+                                <option value="">🍽️ All Pairings</option>
+                                {% for pairing in filter_options.food_pairings %}
+                                <option value="{{ pairing.value }}">{{ pairing.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sort Options -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="filters-section mb-4">
+                    <h4 class="filters-section-title">
+                        <i class="bi bi-sort-down"></i> Sort Results
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="sortBy" class="form-label">Sort By</label>
+                            <select class="form-select" id="sortBy" name="sort_by">
+                                <option value="rating">Vivino Rating</option>
+                                <option value="price">Price (Low to High)</option>
+                                <option value="match_score">Match Score</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sortOrder" class="form-label">Order</label>
+                            <select class="form-select" id="sortOrder" name="sort_order">
+                                <option value="desc">Highest First</option>
+                                <option value="asc">Lowest First</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="filters-actions text-center">
+            <button type="submit" class="btn btn-primary btn-lg me-3">
+                <i class="bi bi-search"></i> Search Wines
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="clearAllFilters()">
+                <i class="bi bi-arrow-clockwise"></i> Clear All Filters
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Results Section -->
+<div class="container py-5" id="resultsSection" style="display: none;">
+    <div class="results-header mb-4">
+        <h3>Search Results</h3>
+        <p class="text-muted" id="resultsCount">0 wines found</p>
+    </div>
+    
+    <div id="wineGrid" class="row">
+        <!-- Wine results will be loaded here -->
+    </div>
+    
+    <div class="text-center mt-4">
+        <button id="loadMoreBtn" class="btn btn-outline-primary" style="display: none;">
+            <i class="bi bi-arrow-down"></i> Load More Results
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Use global variables from main.js
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission
+    document.getElementById('wineFiltersForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        searchWinesWithForm();
+    });
+    
+    // Load more button
+    document.getElementById('loadMoreBtn').addEventListener('click', function() {
+        if (typeof currentPage !== 'undefined') {
+            currentPage++;
+        } else {
+            window.currentPage = (window.currentPage || 1) + 1;
+        }
+        searchWinesWithForm(true);
+    });
+});
+
+async function searchWinesWithForm(append = false) {
+    if (window.isLoading) return;
+    
+    window.isLoading = true;
+    const form = document.getElementById('wineFiltersForm');
+    const formData = new FormData(form);
+    
+    // Add pagination
+    const currentPageValue = window.currentPage || 1;
+    formData.append('page', currentPageValue);
+    formData.append('page_size', 20);
+    
+    // Build query string
+    const params = new URLSearchParams();
+    for (let [key, value] of formData.entries()) {
+        if (value && value.trim() !== '') {
+            params.append(key, value);
+        }
+    }
+    
+    try {
+        const response = await fetch(`/api/wines?${params.toString()}`);
+        const wines = await response.json();
+        
+        const resultsSection = document.getElementById('resultsSection');
+        const wineGrid = document.getElementById('wineGrid');
+        const resultsCount = document.getElementById('resultsCount');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        
+        if (!append) {
+            wineGrid.innerHTML = '';
+            window.currentPage = 1;
+        }
+        
+        // Display results
+        resultsSection.style.display = 'block';
+        
+        if (wines.length > 0) {
+            wines.forEach(wine => {
+                const wineCard = createWineCard(wine);
+                wineGrid.appendChild(wineCard);
+            });
+            
+            // Update results count
+            const totalResults = append ? 
+                document.querySelectorAll('#wineGrid .col-lg-6').length : 
+                wines.length;
+            resultsCount.textContent = `${totalResults} wines found`;
+            
+            // Show/hide load more button
+            loadMoreBtn.style.display = wines.length === 20 ? 'block' : 'none';
+        } else {
+            if (!append) {
+                wineGrid.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                        <h4 class="text-muted mt-3">No wines found</h4>
+                        <p class="text-muted">Try adjusting your filters to find more wines.</p>
+                    </div>
+                `;
+                resultsCount.textContent = '0 wines found';
+            }
+            loadMoreBtn.style.display = 'none';
+        }
+        
+        // Scroll to results if not appending
+        if (!append) {
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        alert('Error searching wines. Please try again.');
+    } finally {
+        window.isLoading = false;
+    }
+}
+
+function createWineCard(wine) {
+    // Reuse the existing createWineCard function from main.js
+    // This will be the same function that creates wine cards on other pages
+    const div = document.createElement('div');
+    div.className = 'col-lg-6 col-xl-4 mb-4';
+    
+    const verifiedBadge = wine.verified ? 
+        '<span class="badge bg-success ms-1"><i class="bi bi-check-circle"></i> Verified</span>' : '';
+    
+    const price = wine.price ? `${Math.round(wine.price)} SEK` : 'Price N/A';
+    
+    // Enhanced wine information
+    const vivinoWineStyle = wine.vivino_wine_style ? `<span class="badge bg-primary me-1">${wine.vivino_wine_style}</span>` : '';
+    const systembolagetStyle = wine.wine_style ? `<span class="badge bg-secondary me-1">${wine.wine_style}</span>` : '';
+    const vivinoCountry = wine.vivino_country ? `<span class="badge bg-outline-info me-1"><i class="bi bi-geo-alt"></i> ${wine.vivino_country}</span>` : '';
+    const year = wine.year ? `<span class="badge bg-outline-secondary">${wine.year}</span>` : '';
+    const winery = wine.vivino_winery ? `<p class="text-muted small mt-2 mb-1"><i class="bi bi-house"></i> ${wine.vivino_winery}</p>` : '';
+    const region = wine.vivino_region ? `<p class="text-muted small mb-1"><i class="bi bi-map"></i> ${wine.vivino_region}</p>` : '';
+    
+    // Alcohol content (prefer vivino data)
+    const alcoholContent = wine.vivino_alcohol_content || wine.alcohol_percentage;
+    const alcohol = alcoholContent ? `<p class="text-muted small mb-2"><i class="bi bi-percent"></i> ${alcoholContent}% vol</p>` : '';
+    
+    // Wine characteristics
+    const characteristics = [];
+    if (wine.body) {
+        const bodyText = wine.body <= 2 ? 'Light' : wine.body <= 3 ? 'Medium' : 'Full';
+        characteristics.push(`<span class="badge bg-info me-1"><i class="bi bi-droplet"></i> ${bodyText} Body</span>`);
+    }
+    if (wine.acidity) {
+        const acidityText = wine.acidity <= 2 ? 'Low' : wine.acidity <= 3 ? 'Medium' : 'High';
+        characteristics.push(`<span class="badge bg-warning text-dark me-1"><i class="bi bi-lightning"></i> ${acidityText} Acidity</span>`);
+    }
+    if (wine.sweetness) {
+        const sweetnessText = wine.sweetness <= 1 ? 'Bone Dry' : wine.sweetness <= 2 ? 'Dry' : wine.sweetness <= 3 ? 'Off-Dry' : wine.sweetness <= 4 ? 'Medium Sweet' : 'Sweet';
+        characteristics.push(`<span class="badge bg-danger text-white me-1"><i class="bi bi-heart"></i> ${sweetnessText}</span>`);
+    }
+    const characteristicsHtml = characteristics.length > 0 ? `<div class="mb-2">${characteristics.join('')}</div>` : '';
+    
+    const matchScore = wine.match_score ? `<div class="mt-2"><small class="text-muted">Match Score: ${wine.match_score.toFixed(1)}%</small></div>` : '';
+    
+    // Wine image with fallback
+    const wineImage = wine.image_url ? 
+        `<div class="wine-image-container text-center py-3">
+            <img src="${wine.image_url}" 
+                 alt="${wine.vivino_name}" 
+                 class="wine-bottle-image img-fluid"
+                 style="max-height: 200px; max-width: 120px; object-fit: contain;"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="wine-placeholder d-none text-muted">
+                <i class="bi bi-cup" style="font-size: 3rem;"></i>
+                <br><small>No image available</small>
+            </div>
+         </div>` : 
+        `<div class="wine-image-container text-center py-3">
+            <div class="wine-placeholder text-muted">
+                <i class="bi bi-cup" style="font-size: 3rem;"></i>
+                <br><small>No image available</small>
+            </div>
+         </div>`;
+    
+    div.innerHTML = `
+        <div class="wine-card card h-100">
+            <div class="card-header d-flex justify-content-between align-items-start">
+                <div class="wine-rating">
+                    <span class="badge bg-warning text-dark">
+                        <i class="bi bi-star-fill"></i> ${wine.vivino_rating}
+                    </span>
+                    ${verifiedBadge}
+                </div>
+                <div class="wine-price text-end">
+                    <strong class="text-primary">${price}</strong>
+                </div>
+            </div>
+            
+            ${wineImage}
+            
+            <div class="card-body">
+                <h5 class="card-title wine-name">${wine.vivino_name}</h5>
+                <h6 class="card-subtitle text-muted mb-2"><i class="bi bi-shop"></i> ${wine.systembolaget_name}</h6>
+                
+                <div class="wine-details mb-2">
+                    ${vivinoWineStyle}
+                    ${systembolagetStyle}
+                    ${vivinoCountry}
+                    ${year}
+                </div>
+                
+                ${characteristicsHtml}
+                
+                ${winery}
+                ${region}
+                ${alcohol}
+            </div>
+            
+            <div class="card-footer bg-transparent">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="/wine/${wine.match_id}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-eye"></i> View Details
+                    </a>
+                    <a href="https://systembolaget.se/sortiment/vin/?q=${wine.product_number}" 
+                       target="_blank" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-shop"></i> Buy
+                    </a>
+                </div>
+                ${matchScore}
+            </div>
+        </div>
+    `;
+    
+    return div;
+}
+
+function clearAllFilters() {
+    document.getElementById('wineFiltersForm').reset();
+    document.getElementById('resultsSection').style.display = 'none';
+    window.currentPage = 1;
+}
+
+// Price range dropdown validation
+document.addEventListener('DOMContentLoaded', function() {
+    const minPriceSelect = document.getElementById('minPrice');
+    const maxPriceSelect = document.getElementById('maxPrice');
+    
+    function validatePriceRange() {
+        const minVal = parseInt(minPriceSelect.value) || 0;
+        const maxVal = parseInt(maxPriceSelect.value) || 999999;
+        
+        // If user selects a min price that's higher than max price, clear max price
+        if (minVal > maxVal && maxPriceSelect.value !== '') {
+            // Only warn if both values are selected
+            if (minPriceSelect.value !== '' && maxPriceSelect.value !== '') {
+                // You could add a visual warning here if needed
+                console.log('Min price cannot be higher than max price');
+            }
+        }
+    }
+    
+    minPriceSelect.addEventListener('change', validatePriceRange);
+    maxPriceSelect.addEventListener('change', validatePriceRange);
+});
+</script>
+
+<style>
+.filters-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid #007bff;
+}
+
+.filters-section-title {
+    color: #495057;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
+}
+
+.filters-actions {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.results-header {
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 1rem;
+}
+
+/* Proven Dual Range Slider Implementation */
+.range-slider-container {
+    height: 40px;
+    position: relative;
+    padding: 15px 0;
+    border-radius: 8px;
+}
+
+/* Base track styling */
+.range-slider-container::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 3px;
+    background: #e9ecef;
+    border-radius: 2px;
+    left: 11px;
+    right: 11px;
+    z-index: 1;
+}
+
+/* Active range highlighting */
+.range-slider-container::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 3px;
+    background: #007bff;
+    border-radius: 2px;
+    left: calc(var(--range-min, 0%) + 11px);
+    width: calc(var(--range-max, 100%) - var(--range-min, 0%) - 22px);
+    z-index: 2;
+}
+
+.range-slider-container input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    height: 24px;
+    pointer-events: none;
+}
+
+.range-slider-container input[type="range"]::-webkit-slider-track {
+    height: 3px;
+    background: transparent;
+    border-radius: 2px;
+}
+
+.range-slider-container input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    border: 3px solid #fff;
+    transition: all 0.2s ease;
+    pointer-events: all;
+    position: relative;
+    z-index: 10;
+}
+
+.range-slider-container input[type="range"]::-webkit-slider-thumb:hover {
+    background: #0056b3;
+    transform: scale(1.1);
+}
+
+.range-slider-container input[type="range"]::-webkit-slider-thumb:active {
+    transform: scale(0.95);
+    background: #004085;
+}
+
+/* Firefox styles */
+.range-slider-container input[type="range"]::-moz-range-track {
+    height: 3px;
+    background: transparent;
+    border-radius: 2px;
+    border: none;
+}
+
+.range-slider-container input[type="range"]::-moz-range-thumb {
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    border: 3px solid #fff;
+    transition: all 0.2s ease;
+    pointer-events: all;
+    position: relative;
+    z-index: 10;
+}
+
+.range-slider-container input[type="range"]::-moz-range-thumb:hover {
+    background: #0056b3;
+    transform: scale(1.1);
+}
+
+.price-range-container {
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.price-range-container .d-flex {
+    margin-bottom: 0.75rem;
+}
+
+.price-range-container .text-muted {
+    font-weight: 500;
+}
+
+#priceRangeDisplay {
+    font-weight: 600;
+    color: #007bff !important;
+    font-size: 1rem;
+}
+
+:root {
+    --range-min: 0%;
+    --range-max: 100%;
+}
+</style>
+{% endblock %}

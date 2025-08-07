@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}{{ toplist.name }} - Best Wines Sweden{% endblock %}
+
+{% block content %}
+<!-- Toplist Hero Section -->
+<div class="toplist-hero py-5 bg-gradient">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ toplist.name }}</li>
+            </ol>
+        </nav>
+        
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold text-wine-red mb-2">{{ toplist.name }}</h1>
+                
+                {% if toplist.category %}
+                <div class="mb-3">
+                    {% if toplist.category == 'budget' %}
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-currency-dollar"></i> {{ toplist.category|title }}
+                    </span>
+                    {% elif toplist.category == 'premium' %}
+                    <span class="badge bg-warning text-dark fs-6">
+                        <i class="bi bi-star"></i> {{ toplist.category|title }}
+                    </span>
+                    {% elif toplist.category == 'natural' %}
+                    <span class="badge bg-info fs-6">
+                        <i class="bi bi-flower1"></i> {{ toplist.category|title }}
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary fs-6">{{ toplist.category|title }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if toplist.description %}
+                <p class="lead text-muted mb-4">{{ toplist.description }}</p>
+                {% endif %}
+                
+                <!-- Toplist Statistics -->
+                <div class="row">
+                    <div class="col-auto">
+                        <div class="stat-card text-center p-3 bg-white rounded shadow-sm">
+                            <div class="h3 mb-1 text-primary">{{ wine_count }}</div>
+                            <div class="small text-muted">Wines Available</div>
+                        </div>
+                    </div>
+                    {% if avg_rating %}
+                    <div class="col-auto">
+                        <div class="stat-card text-center p-3 bg-white rounded shadow-sm">
+                            <div class="h3 mb-1 text-warning">
+                                <i class="bi bi-star-fill"></i> {{ avg_rating }}
+                            </div>
+                            <div class="small text-muted">Average Rating</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if avg_price %}
+                    <div class="col-auto">
+                        <div class="stat-card text-center p-3 bg-white rounded shadow-sm">
+                            <div class="h3 mb-1 text-success">{{ avg_price }} SEK</div>
+                            <div class="small text-muted">Average Price</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-lg-4 text-lg-end">
+                <!-- Toplist Actions -->
+                <div class="toplist-actions">
+                    <a href="/" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Browse
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wines in Toplist -->
+<div class="container py-5">
+    {% if wines %}
+    <!-- Results Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h6>
+            Wines in This List
+            <small class="text-muted fs-6">({{ wine_count }} wines)</small>
+        </h6>
+        
+        <!-- Sort Options -->
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown">
+                <i class="bi bi-sort-down"></i> Sort by Rating
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="sortWines('rating')">
+                    <i class="bi bi-star"></i> Rating (High to Low)
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="sortWines('price')">
+                    <i class="bi bi-currency-dollar"></i> Price (Low to High)
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="sortWines('name')">
+                    <i class="bi bi-sort-alpha-down"></i> Name (A to Z)
+                </a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Wine Grid -->
+    <div id="wineGrid" class="row">
+        {% for wine in wines %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="wine-card card h-100">
+                <div class="card-header d-flex justify-content-between align-items-start">
+                    <div class="wine-rating">
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-star-fill"></i> {{ wine.vivino_rating }}
+                        </span>
+                        {% if wine.verified %}
+                        <span class="badge bg-success ms-1">
+                            <i class="bi bi-check-circle"></i> Verified
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="wine-price text-end">
+                        {% if wine.price %}
+                        <strong class="text-primary">{{ "%.0f"|format(wine.price) }} SEK</strong>
+                        {% else %}
+                        <span class="text-muted">Price N/A</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Wine Image -->
+                {% if wine.image_url %}
+                <div class="wine-image-container text-center py-3">
+                    <img src="{{ wine.image_url }}" 
+                         alt="{{ wine.vivino_name }}" 
+                         class="wine-bottle-image img-fluid"
+                         style="max-height: 200px; max-width: 120px; object-fit: contain;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="wine-placeholder d-none text-muted">
+                        <i class="bi bi-cup" style="font-size: 3rem;"></i>
+                        <br><small>No image available</small>
+                    </div>
+                </div>
+                {% else %}
+                <div class="wine-image-container text-center py-3">
+                    <div class="wine-placeholder text-muted">
+                        <i class="bi bi-cup" style="font-size: 3rem;"></i>
+                        <br><small>No image available</small>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="card-body">
+                    <h5 class="card-title wine-name">{{ wine.vivino_name }}</h5>
+                    <h6 class="card-subtitle text-muted mb-2"><i class="bi bi-shop"></i> {{ wine.systembolaget_name }}</h6>
+                    
+                    <div class="wine-details mb-2">
+                        {% if wine.vivino_wine_style %}
+                        <span class="badge bg-primary me-1">{{ wine.vivino_wine_style }}</span>
+                        {% elif wine.wine_style %}
+                        <span class="badge bg-secondary me-1">{{ wine.wine_style }}</span>
+                        {% endif %}
+                        
+                        {% if wine.vivino_country %}
+                        <span class="badge bg-outline-info me-1"><i class="bi bi-geo-alt"></i> {{ wine.vivino_country }}</span>
+                        {% elif wine.country %}
+                        <span class="badge bg-outline-secondary me-1">{{ wine.country }}</span>
+                        {% endif %}
+                        
+                        {% if wine.year %}
+                        <span class="badge bg-outline-secondary">{{ wine.year }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Wine Characteristics -->
+                    {% if wine.body or wine.acidity %}
+                    <div class="mb-2">
+                        {% if wine.body %}
+                        <span class="badge bg-info me-1">
+                            <i class="bi bi-droplet"></i> 
+                            {% if wine.body <= 2 %}Light{% elif wine.body <= 3 %}Medium{% else %}Full{% endif %} Body
+                        </span>
+                        {% endif %}
+                        {% if wine.acidity %}
+                        <span class="badge bg-warning text-dark me-1">
+                            <i class="bi bi-lightning"></i> 
+                            {% if wine.acidity <= 2 %}Low{% elif wine.acidity <= 3 %}Medium{% else %}High{% endif %} Acidity
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if wine.vivino_winery %}
+                    <p class="text-muted small mt-2 mb-1">
+                        <i class="bi bi-house"></i> {{ wine.vivino_winery }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if wine.vivino_region %}
+                    <p class="text-muted small mb-1">
+                        <i class="bi bi-map"></i> {{ wine.vivino_region }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if wine.producer %}
+                    <p class="text-muted small mb-1">
+                        <i class="bi bi-building"></i> {{ wine.producer }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if wine.vivino_alcohol_content %}
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-percent"></i> {{ wine.vivino_alcohol_content }}% vol
+                    </p>
+                    {% elif wine.alcohol_percentage %}
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-percent"></i> {{ wine.alcohol_percentage }}% vol
+                    </p>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="/wine/{{ wine.match_id }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                        <a href="https://systembolaget.se/sortiment/vin/?q={{ wine.product_number }}" 
+                           target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-shop"></i> Buy
+                        </a>
+                    </div>
+                    {% if wine.match_score %}
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Match Score: {{ "%.1f"|format(wine.match_score) }}%
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- No Results -->
+    <div class="text-center py-5">
+        <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+        <h3 class="text-muted mt-3">No wines found in this toplist</h3>
+        <p class="text-muted">This toplist may not have any wines that are currently available at Systembolaget.</p>
+        <a href="/" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Browse All Wines
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Simple sorting functionality
+function sortWines(criteria) {
+    const grid = document.getElementById('wineGrid');
+    const wines = Array.from(grid.children);
+    
+    wines.sort((a, b) => {
+        let aVal, bVal;
+        
+        if (criteria === 'rating') {
+            aVal = parseFloat(a.querySelector('.wine-rating .badge').textContent.match(/[\d.]+/)[0]);
+            bVal = parseFloat(b.querySelector('.wine-rating .badge').textContent.match(/[\d.]+/)[0]);
+            return bVal - aVal; // High to low
+        } else if (criteria === 'price') {
+            const aPriceText = a.querySelector('.wine-price .text-primary')?.textContent || '9999';
+            const bPriceText = b.querySelector('.wine-price .text-primary')?.textContent || '9999';
+            aVal = parseFloat(aPriceText.match(/[\d.]+/)?.[0] || 9999);
+            bVal = parseFloat(bPriceText.match(/[\d.]+/)?.[0] || 9999);
+            return aVal - bVal; // Low to high
+        } else if (criteria === 'name') {
+            aVal = a.querySelector('.wine-name').textContent.toLowerCase();
+            bVal = b.querySelector('.wine-name').textContent.toLowerCase();
+            return aVal.localeCompare(bVal); // A to Z
+        }
+        
+        return 0;
+    });
+    
+    // Clear and re-append sorted wines
+    grid.innerHTML = '';
+    wines.forEach(wine => grid.appendChild(wine));
+    
+    // Update dropdown text
+    const dropdown = document.getElementById('sortDropdown');
+    const criteria_names = {
+        'rating': 'Rating (High to Low)',
+        'price': 'Price (Low to High)', 
+        'name': 'Name (A to Z)'
+    };
+    dropdown.innerHTML = `<i class="bi bi-sort-down"></i> Sort by ${criteria_names[criteria]}`;
+}
+</script>
+{% endblock %}

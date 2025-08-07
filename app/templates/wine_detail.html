@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}{{ wine.vivino_name }} - Best Wines Sweden{% endblock %}
+
+{% block content %}
+<!-- Wine Hero Section -->
+<div class="wine-hero py-5">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Wine Details</li>
+            </ol>
+        </nav>
+        
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold text-wine-red mb-2">{{ wine.vivino_name }}</h1>
+                <h2 class="h4 text-muted mb-3"><i class="bi bi-shop"></i> {{ wine.systembolaget_name }}</h2>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rating-display me-4">
+                        <i class="bi bi-star-fill"></i> {{ wine.vivino_rating }}
+                    </div>
+                    
+                    {% if wine.verified %}
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-check-circle"></i> Verified Match
+                    </span>
+                    {% endif %}
+                    
+                    {% if wine.match_score %}
+                    <span class="badge bg-info text-dark fs-6 ms-2">
+                        {{ "%.1f"|format(wine.match_score) }}% Match
+                    </span>
+                    {% endif %}
+                </div>
+                
+                {% if wine.price %}
+                <div class="price-display mb-4">
+                    <span class="h2 text-primary fw-bold">{{ "%.0f"|format(wine.price) }} SEK</span>
+                    <small class="text-muted ms-2">at Systembolaget</small>
+                </div>
+                {% endif %}
+                
+                <div class="action-buttons">
+                    <a href="https://systembolaget.se/sortiment/vin/?q={{ wine.product_number }}" 
+                       target="_blank" class="btn btn-primary btn-lg">
+                        <i class="bi bi-shop"></i> Buy at Systembolaget
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="wine-image-container bg-light rounded d-flex align-items-center justify-content-center" 
+                     style="height: 300px;">
+                    {% if wine.image_url %}
+                    <img src="{{ wine.image_url }}" 
+                         alt="{{ wine.vivino_name }}" 
+                         class="img-fluid wine-bottle-image"
+                         style="max-height: 280px; max-width: 200px; object-fit: contain;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="wine-placeholder text-muted d-none flex-column align-items-center">
+                        <i class="bi bi-cup" style="font-size: 4rem;"></i>
+                        <small class="mt-2">Image not available</small>
+                    </div>
+                    {% else %}
+                    <div class="wine-placeholder text-muted d-flex flex-column align-items-center">
+                        <i class="bi bi-cup" style="font-size: 4rem;"></i>
+                        <small class="mt-2">No image available</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wine Details -->
+<div class="container py-5">
+    <div class="row">
+        <!-- Main Information -->
+        <div class="col-lg-8">
+            <div class="wine-info-card mb-3">
+                <h6 class="border-bottom pb-1 mb-2">
+                    <i class="bi bi-info-circle"></i> Wine Information
+                </h6>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {% if wine.vivino_wine_style %}
+                        <div class="mb-2">
+                            <h6 class="mb-1"><i class="bi bi-award text-primary"></i> Style</h6>
+                            <p class="mb-0">{{ wine.vivino_wine_style }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if wine.vivino_country %}
+                        <div class="mb-2">
+                            <h6 class="mb-1"><i class="bi bi-geo-alt text-info"></i> Country</h6>
+                            <p class="mb-0">{{ wine.vivino_country }}</p>
+                        </div>
+                        {% elif wine.country %}
+                        <div class="mb-2">
+                            <h6 class="mb-1"><i class="bi bi-geo-alt"></i> Country</h6>
+                            <p class="mb-0">{{ wine.country }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if wine.grape_varieties %}
+                        <div class="mb-2">
+                            <h6 class="mb-1"><i class="bi bi-flower1"></i> Grape Varieties</h6>
+                            <div class="grape-varieties">
+                                {% for grape in wine.grape_varieties %}
+                                <p class="mb-0">{{ grape }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if wine.year %}
+                        <div class="mb-2">
+                            <h6 class="mb-1"><i class="bi bi-calendar"></i> Vintage</h6>
+                            <p class="mb-0">{{ wine.year }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if wine.producer %}
+                        <div class="mb-2">
+                            <h6 class="mb-1"><i class="bi bi-building"></i> Producer</h6>
+                            <p class="mb-0">{{ wine.producer }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        {% if wine.description %}
+                        <div class="mb-3">
+                            <h6 class="mb-1"><i class="bi bi-chat-quote"></i> Description</h6>
+                            <p class="text-muted mb-0">{{ wine.description }}</p>
+                        </div>
+                        {% endif %}
+                        
+
+                    </div>
+                </div>
+                
+                <!-- Wine Characteristics -->
+                {% if wine.body or wine.acidity or wine.sweetness %}
+                <div class="mt-4">
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-droplet"></i> Wine Characteristics
+                    </h6>
+                    <div class="row">
+                        {% if wine.body %}
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="bi bi-cup text-info fs-3 mb-2"></i>
+                                <h6 class="mb-1">Body</h6>
+                                <span class="badge 
+                                    {% if wine.body <= 2 %}bg-light text-dark{% elif wine.body <= 3 %}bg-info{% else %}bg-dark{% endif %} 
+                                    fs-6 px-3 py-2">
+                                    {% if wine.body <= 2 %}Light{% elif wine.body <= 3 %}Medium{% else %}Full{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if wine.acidity %}
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="bi bi-droplet-half text-warning fs-3 mb-2"></i>
+                                <h6 class="mb-1">Acidity</h6>
+                                <span class="badge 
+                                    {% if wine.acidity <= 2 %}bg-light text-dark{% elif wine.acidity <= 3 %}bg-warning text-dark{% else %}bg-danger{% endif %} 
+                                    fs-6 px-3 py-2">
+                                    {% if wine.acidity <= 2 %}Low{% elif wine.acidity <= 3 %}Medium{% else %}High{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if wine.sweetness %}
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="bi bi-award text-success fs-3 mb-2"></i>
+                                <h6 class="mb-1">Sweetness</h6>
+                                <span class="badge 
+                                    {% if wine.sweetness <= 1 %}bg-secondary{% elif wine.sweetness <= 2 %}bg-light text-dark{% elif wine.sweetness <= 3 %}bg-warning text-dark{% elif wine.sweetness <= 4 %}bg-info{% else %}bg-success{% endif %} 
+                                    fs-6 px-3 py-2">
+                                    {% if wine.sweetness <= 1 %}Bone Dry{% elif wine.sweetness <= 2 %}Dry{% elif wine.sweetness <= 3 %}Off-Dry{% elif wine.sweetness <= 4 %}Medium Sweet{% else %}Sweet{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Pairing Suggestions -->
+                <div class="mt-4">
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-egg-fried"></i> Pairing Suggestions
+                    </h6>
+                    <div class="row" id="pairingSuggestions">
+                        <!-- Pairing suggestions will be loaded here -->
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+
+
+            <!-- Similar Wines -->
+            <div class="wine-info-card">
+                <h6 class="border-bottom pb-2 mb-3">
+                    <i class="bi bi-collection"></i> Similar Wines
+                </h6>
+                
+                <div id="similarWines">
+                    <div class="text-center text-muted py-3">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="mt-2">Loading similar wines...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Load pairing suggestions from AI-generated data
+    document.addEventListener('DOMContentLoaded', function() {
+        loadPairingSuggestions();
+        loadSimilarWines();
+    });
+    
+    function loadPairingSuggestions() {
+        const container = document.getElementById('pairingSuggestions');
+        
+        // Get AI-generated simplified food pairings
+        const aiPairings = {{ wine.simplified_food_pairings | tojson | safe }} || [];
+        
+        // Icon mapping for food categories
+        const iconMapping = {
+            'beef': 'bi-heart-fill',
+            'pork': 'bi-heart-fill', 
+            'lamb': 'bi-heart-fill',
+            'game': 'bi-heart-fill',
+            'poultry': 'bi-egg-fried',
+            'chicken': 'bi-egg-fried',
+            'duck': 'bi-egg-fried',
+            'fish': 'bi-water',
+            'shellfish': 'bi-water',
+            'seafood': 'bi-water',
+            'salmon': 'bi-water',
+            'tuna': 'bi-water',
+            'cheese': 'bi-triangle-fill',
+            'brie': 'bi-triangle-fill',
+            'cheddar': 'bi-triangle-fill',
+            'goat': 'bi-triangle-fill',
+            'blue': 'bi-triangle-fill',
+            'vegetables': 'bi-flower1',
+            'salads': 'bi-flower1',
+            'mushrooms': 'bi-flower1',
+            'pasta': 'bi-circle-fill',
+            'fruit': 'bi-apple',
+            'berries': 'bi-apple',
+            'citrus': 'bi-apple',
+            'tropical': 'bi-apple',
+            'chocolate': 'bi-star-fill',
+            'desserts': 'bi-star-fill',
+            'sweets': 'bi-star-fill',
+            'cake': 'bi-star-fill',
+            'bread': 'bi-square-fill',
+            'crackers': 'bi-square-fill',
+            'nuts': 'bi-square-fill',
+            'herbs': 'bi-flower2',
+            'spices': 'bi-flower2',
+            'garlic': 'bi-flower2',
+            'pepper': 'bi-flower2',
+            'rice': 'bi-circle',
+            'grains': 'bi-circle',
+            'appetizers': 'bi-three-dots',
+            'tapas': 'bi-three-dots'
+        };
+        
+        if (aiPairings.length > 0) {
+            // Use AI-generated pairings
+            const suggestions = aiPairings.map(pairing => {
+                const icon = iconMapping[pairing.toLowerCase()] || 'bi-star';
+                const capitalizedPairing = pairing.charAt(0).toUpperCase() + pairing.slice(1);
+                
+                return {
+                    food: capitalizedPairing,
+                    icon: icon,
+                    desc: `Pairs wonderfully with this wine`
+                };
+            });
+            
+            container.innerHTML = suggestions.map(item => `
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi ${item.icon} text-primary me-2" style="font-size: 1.2rem;"></i>
+                        <div>
+                            <strong>${item.food}</strong>
+                            <br>
+                            <small class="text-muted">${item.desc}</small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            // Fallback for wines without AI pairings
+            container.innerHTML = `
+                <div class="col-12 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-star text-primary me-2" style="font-size: 1.2rem;"></i>
+                        <div>
+                            <strong>Versatile Pairing</strong>
+                            <br>
+                            <small class="text-muted">Pairs well with many dishes</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    async function loadSimilarWines() {
+        try {
+            const wineId = {{ wine.match_id }};
+            const response = await fetch(`/api/wines/${wineId}/similar`);
+            const similarWines = await response.json();
+            
+            const container = document.getElementById('similarWines');
+            
+            if (similarWines.length > 0) {
+                container.innerHTML = similarWines.map(wine => `
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center">
+                            ${wine.image_url ? `<img src="${wine.image_url}" alt="${wine.vivino_name}" class="me-3" style="width: 40px; height: 60px; object-fit: contain; border-radius: 4px;">` : '<div class="me-3" style="width: 40px; height: 60px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-wine text-muted"></i></div>'}
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-truncate" style="max-width: 200px;">${wine.vivino_name}</div>
+                                <div class="small text-muted">
+                                    <i class="bi bi-star-fill text-warning"></i> ${wine.vivino_rating}
+                                    ${wine.price ? `• ${Math.round(wine.price)} SEK` : ''}
+                                </div>
+                                <div class="small text-muted">
+                                    ${wine.simplified_wine_style || wine.wine_style || ''}
+                                </div>
+                            </div>
+                            <div class="ms-2">
+                                <a href="/wine/${wine.match_id}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-info-circle"></i>
+                        <div class="mt-2">No similar wines found. Try exploring our 
+                            <a href="/filters?simplified_wine_style=${encodeURIComponent('{{ wine.simplified_wine_style or "" }}')}">
+                                ${('{{ wine.simplified_wine_style or "wine" }}').toLowerCase()} collection
+                            </a>!
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading similar wines:', error);
+            const container = document.getElementById('similarWines');
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <div class="mt-2">Unable to load similar wines at the moment.</div>
+                </div>
+            `;
+        }
+    }
+    
+    function addToFavorites(wineId) {
+        // Add to favorites functionality
+        const btn = event.target;
+        btn.innerHTML = '<i class="bi bi-heart-fill"></i> Added to Favorites';
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-success');
+        btn.disabled = true;
+        
+        // Here you would typically make an API call to save the favorite
+        console.log('Added wine to favorites:', wineId);
+    }
+    
+    function shareWine() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ wine.vivino_name }}',
+                text: 'Check out this wine I found on Best Wines Sweden!',
+                url: window.location.href
+            });
+        } else {
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('Wine URL copied to clipboard!');
+            });
+        }
+    }
+    
+    function reportIssue() {
+        // Report issue functionality
+        alert('Thank you! Issue reporting feature coming soon.');
+    }
+    
+    function suggestEdit() {
+        // Suggest edit functionality
+        alert('Thank you! Edit suggestion feature coming soon.');
+    }
+</script>
+{% endblock %}
