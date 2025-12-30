@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Best Wines Sweden{% endblock %}</title>
     
+    <!-- Google Fonts - Playfair Display for wine names -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Custom CSS -->
-    <link href="{{ url_for('static', path='/css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/style.css') }}?v=11" rel="stylesheet">
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="a3dbc54e-2453-44d9-83d6-528b2ad77373"></script>
     <!-- Favicon -->
@@ -31,31 +35,16 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">
-                            <i class="bi bi-house"></i> Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/filters">
-                            <i class="bi bi-funnel"></i> Filters
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/toplists">
-                            <i class="bi bi-list-ol"></i> Toplists
-                        </a>
-                    </li>
                 </ul>
                 
                 <!-- Search -->
-                <div class="d-flex">
-                    <input class="form-control me-2" type="search" placeholder="Search wines..." 
-                           id="searchInput" onkeypress="handleSearch(event)">
-                    <button class="btn btn-outline-light" onclick="searchWines()">
+                <form class="d-flex" action="/filters" method="get">
+                    <input type="hidden" name="sort" value="date_desc">
+                    <input class="form-control me-2" type="search" placeholder="Search wines..." name="q">
+                    <button class="btn btn-outline-light" type="submit">
                         <i class="bi bi-search"></i>
                     </button>
-                </div>
+                </form>
             </div>
         </div>
     </nav>
@@ -83,7 +72,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/main.js') }}?v=11"></script>
     
     {% block extra_scripts %}{% endblock %}
 </body>

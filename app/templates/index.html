@@ -18,110 +18,19 @@
             </div>
             <div class="col-lg-4">
                 <div class="stats-grid">
-                    <div class="stat-card bg-white bg-opacity-10 rounded p-3 mb-3">
+                    <a href="/filters?sort=date_desc" class="stat-card bg-white bg-opacity-10 rounded p-3 mb-3 d-block text-decoration-none text-white" style="cursor: pointer; transition: transform 0.2s, background 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.2)'" onmouseout="this.style.backgroundColor=''" title="Browse wines from newest to oldest">
                         <h3 class="h2 mb-1">{{ total_wines }}</h3>
                         <p class="mb-0">Wine Matches</p>
-                    </div>
-                    <div class="stat-card bg-white bg-opacity-10 rounded p-3 mb-3">
+                    </a>
+                    <a href="/toplists" class="stat-card bg-white bg-opacity-10 rounded p-3 mb-3 d-block text-decoration-none text-white" style="cursor: pointer; transition: transform 0.2s, background 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.2)'" onmouseout="this.style.backgroundColor=''" title="View curated wine lists">
                         <h3 class="h2 mb-1">{{ total_toplists }}</h3>
                         <p class="mb-0">Curated Lists</p>
-                    </div>
-                    <div class="stat-card bg-white bg-opacity-10 rounded p-3">
+                    </a>
+                    <a href="/filters?sort=rating_desc" class="stat-card bg-white bg-opacity-10 rounded p-3 d-block text-decoration-none text-white" style="cursor: pointer; transition: transform 0.2s, background 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.2)'" onmouseout="this.style.backgroundColor=''" title="Browse wines by highest rating">
                         <h3 class="h2 mb-1">{{ avg_rating }}</h3>
                         <p class="mb-0">Avg Rating</p>
-                    </div>
+                    </a>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Filter Panel (Initially Hidden) -->
-<div id="filterPanel" class="filter-panel bg-light py-3" style="display: none;">
-    <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <h4 class="mb-3">
-                    <i class="bi bi-funnel"></i> Filter Wines
-                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="clearFilters()">
-                        <i class="bi bi-x"></i> Clear All
-                    </button>
-                </h4>
-            </div>
-        </div>
-        
-        <div class="row g-3">
-            <!-- Price Range -->
-            <div class="col-md-3">
-                <label class="form-label">Price Range (SEK)</label>
-                <div class="input-group input-group-sm">
-                    <input type="number" class="form-control" id="minPrice" placeholder="Min">
-                    <span class="input-group-text">-</span>
-                    <input type="number" class="form-control" id="maxPrice" placeholder="Max">
-                </div>
-            </div>
-            
-            <!-- Rating Range -->
-            <div class="col-md-3">
-                <label class="form-label">Rating</label>
-                <div class="input-group input-group-sm">
-                    <input type="number" class="form-control" id="minRating" placeholder="Min" min="0" max="5" step="0.1">
-                    <span class="input-group-text">-</span>
-                    <input type="number" class="form-control" id="maxRating" placeholder="Max" min="0" max="5" step="0.1">
-                </div>
-            </div>
-            
-            <!-- Wine Style -->
-            <div class="col-md-3">
-                <label class="form-label">Wine Style</label>
-                <select class="form-select form-select-sm" id="wineStyle">
-                    <option value="">All Styles</option>
-                </select>
-            </div>
-            
-            <!-- Country -->
-            <div class="col-md-3">
-                <label class="form-label">Country</label>
-                <select class="form-select form-select-sm" id="country">
-                    <option value="">All Countries</option>
-                </select>
-            </div>
-            
-            <!-- Search -->
-            <div class="col-md-6">
-                <label class="form-label">Search</label>
-                <input type="text" class="form-control form-control-sm" id="searchTerm" 
-                       placeholder="Wine name, producer, or vintage...">
-            </div>
-            
-            <!-- Sort Options -->
-            <div class="col-md-3">
-                <label class="form-label">Sort By</label>
-                <select class="form-select form-select-sm" id="sortBy">
-                    <option value="rating">Rating</option>
-                    <option value="price">Price</option>
-                    <option value="match_score">Match Score</option>
-                </select>
-            </div>
-            
-            <!-- Sort Order -->
-            <div class="col-md-3">
-                <label class="form-label">Order</label>
-                <select class="form-select form-select-sm" id="sortOrder">
-                    <option value="desc">High to Low</option>
-                    <option value="asc">Low to High</option>
-                </select>
-            </div>
-        </div>
-        
-        <div class="row mt-3">
-            <div class="col-12">
-                <button class="btn btn-primary" onclick="applyFilters()">
-                    <i class="bi bi-search"></i> Apply Filters
-                </button>
-                <button class="btn btn-outline-secondary ms-2" onclick="hideFilters()">
-                    <i class="bi bi-x"></i> Hide Filters
-                </button>
             </div>
         </div>
     </div>
@@ -155,30 +64,31 @@
     <!-- Results Header -->
     <div id="resultsHeader" class="d-flex justify-content-between align-items-center mb-4">
         <h2>Recent Wine Discoveries</h2>
-        <small class="text-muted" id="resultsCount">Showing {{ wines|length }} wines</small>
+        <small class="text-muted" id="resultsCount">Showing <span id="visibleCount">{{ [wines|length, 9]|min }}</span> of {{ wines|length }} wines</small>
     </div>
     
     <!-- Wine Grid -->
     <div id="wineGrid" class="row">
         {% for wine in wines %}
-        <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="col-lg-6 col-xl-4 mb-4 wine-item" {% if loop.index > 9 %}style="display: none;"{% endif %}>
             <div class="wine-card card h-100">
-                <div class="card-header d-flex justify-content-between align-items-start">
-                    <div class="wine-rating">
-                        <span class="badge bg-warning text-dark">
-                            <i class="bi bi-star-fill"></i> {{ wine.vivino_rating }}
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="badge {% if wine.vivino_rating %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            <i class="bi bi-star-fill"></i> {{ wine.vivino_rating if wine.vivino_rating else 'N/A' }}
                         </span>
-                        {% if wine.verified %}
-                        <span class="badge bg-success ms-1">
-                            <i class="bi bi-check-circle"></i> Verified
-                        </span>
+                        {% set style = wine.vivino_wine_style or wine.wine_style %}
+                        {% if style %}
+                        <span class="badge {% if 'red' in style|lower %}wine-style-red{% elif 'white' in style|lower %}wine-style-white{% elif 'rosé' in style|lower or 'rose' in style|lower %}wine-style-rose{% elif 'sparkling' in style|lower or 'champagne' in style|lower or 'prosecco' in style|lower %}wine-style-sparkling{% elif 'dessert' in style|lower or 'sweet' in style|lower %}wine-style-dessert{% elif 'fortified' in style|lower or 'port' in style|lower or 'sherry' in style|lower %}wine-style-fortified{% else %}wine-style-other{% endif %}">{{ style }}</span>
+                        {% endif %}
+                        {% set country = wine.vivino_country or wine.country %}
+                        {% if country %}
+                        <span class="badge bg-light text-dark" title="{{ country }}">{% if 'spain' in country|lower or 'spanien' in country|lower %}🇪🇸{% elif 'france' in country|lower or 'frankrike' in country|lower %}🇫🇷{% elif 'italy' in country|lower or 'italien' in country|lower %}🇮🇹{% elif 'germany' in country|lower or 'tyskland' in country|lower %}🇩🇪{% elif 'portugal' in country|lower %}🇵🇹{% elif 'australia' in country|lower or 'australien' in country|lower %}🇦🇺{% elif 'chile' in country|lower %}🇨🇱{% elif 'argentina' in country|lower %}🇦🇷{% elif 'usa' in country|lower or 'united states' in country|lower %}🇺🇸{% elif 'south africa' in country|lower or 'sydafrika' in country|lower %}🇿🇦{% elif 'new zealand' in country|lower or 'nya zeeland' in country|lower %}🇳🇿{% elif 'austria' in country|lower or 'österrike' in country|lower %}🇦🇹{% elif 'greece' in country|lower or 'grekland' in country|lower %}🇬🇷{% elif 'lebanon' in country|lower or 'libanon' in country|lower %}🇱🇧{% elif 'north macedonia' in country|lower or 'nordmakedonien' in country|lower %}🇲🇰{% else %}🌍{% endif %}</span>
                         {% endif %}
                     </div>
-                    <div class="wine-price text-end">
-                        {% if wine.price %}
-                        <strong class="text-primary">{{ "%.0f"|format(wine.price) }} SEK</strong>
-                        {% endif %}
-                    </div>
+                    {% if wine.price %}
+                    <span class="badge bg-dark">{{ "%.0f"|format(wine.price) }} SEK</span>
+                    {% endif %}
                 </div>
                 
                 <!-- Wine Image -->
@@ -204,110 +114,46 @@
                 {% endif %}
                 
                 <div class="card-body">
-                    <h5 class="card-title wine-name">{{ wine.vivino_name }}</h5>
-                    <h6 class="card-subtitle text-muted mb-2"><i class="bi bi-shop"></i> {{ wine.systembolaget_name }}</h6>
-                    
-                    <div class="wine-details mb-2">
-                        {% if wine.vivino_wine_style %}
-                        <span class="badge bg-primary me-1">{{ wine.vivino_wine_style }}</span>
-                        {% elif wine.wine_style %}
-                        <span class="badge bg-secondary me-1">{{ wine.wine_style }}</span>
-                        {% endif %}
-                        
-                        {% if wine.vivino_country %}
-                        <span class="badge bg-outline-info me-1"><i class="bi bi-geo-alt"></i> {{ wine.vivino_country }}</span>
-                        {% elif wine.country %}
-                        <span class="badge bg-outline-secondary me-1">{{ wine.country }}</span>
-                        {% endif %}
-                        
-                        {% if wine.year %}
-                        <span class="badge bg-outline-secondary">{{ wine.year }}</span>
-                        {% endif %}
+                    <!-- Wine Title with Match Background -->
+                    <div class="wine-title-container {% if wine.match_score >= 80 %}match-high{% elif wine.match_score >= 50 %}match-medium{% else %}match-low{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <p class="wine-name mb-1">{{ wine.systembolaget_name }}</p>
+                                {% if wine.vivino_name and wine.vivino_name != wine.systembolaget_name %}
+                                <p class="wine-name-secondary mb-0">{{ wine.vivino_name }}</p>
+                                {% endif %}
+                            </div>
+                            {% if wine.match_score %}
+                            <span class="badge {% if wine.match_score >= 80 %}bg-success{% elif wine.match_score >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} ms-2">{{ "%.0f"|format(wine.match_score) }}%</span>
+                            {% endif %}
+                        </div>
                     </div>
-                    
-                    <!-- Wine Characteristics -->
-                    {% if wine.body or wine.acidity or wine.sweetness %}
-                    <div class="mb-2">
-                        {% if wine.body %}
-                        <span class="badge bg-info me-1">
-                            <i class="bi bi-droplet"></i> 
-                            {% if wine.body <= 2 %}Light{% elif wine.body <= 3 %}Medium{% else %}Full{% endif %} Body
-                        </span>
-                        {% endif %}
-                        {% if wine.acidity %}
-                        <span class="badge bg-warning text-dark me-1">
-                            <i class="bi bi-lightning"></i> 
-                            {% if wine.acidity <= 2 %}Low{% elif wine.acidity <= 3 %}Medium{% else %}High{% endif %} Acidity
-                        </span>
-                        {% endif %}
-                        {% if wine.sweetness %}
-                        <span class="badge bg-danger text-white me-1">
-                            <i class="bi bi-heart"></i> 
-                            {% if wine.sweetness <= 1 %}Bone Dry{% elif wine.sweetness <= 2 %}Dry{% elif wine.sweetness <= 3 %}Off-Dry{% elif wine.sweetness <= 4 %}Medium Sweet{% else %}Sweet{% endif %}
-                        </span>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                    
-                    {% if wine.vivino_winery %}
-                    <p class="text-muted small mt-2 mb-1">
-                        <i class="bi bi-house"></i> {{ wine.vivino_winery }}
-                    </p>
-                    {% endif %}
-                    
-                    {% if wine.vivino_region %}
-                    <p class="text-muted small mb-1">
-                        <i class="bi bi-map"></i> {{ wine.vivino_region }}
-                    </p>
-                    {% endif %}
-                    
-                    {% if wine.producer %}
-                    <p class="text-muted small mb-1">
-                        <i class="bi bi-building"></i> {{ wine.producer }}
-                    </p>
-                    {% endif %}
-                    
-                    {% if wine.vivino_alcohol_content %}
-                    <p class="text-muted small mb-2">
-                        <i class="bi bi-percent"></i> {{ wine.vivino_alcohol_content }}% vol
-                    </p>
-                    {% elif wine.alcohol_percentage %}
-                    <p class="text-muted small mb-2">
-                        <i class="bi bi-percent"></i> {{ wine.alcohol_percentage }}% vol
-                    </p>
-                    {% endif %}
                 </div>
                 
                 <div class="card-footer bg-transparent">
                     <div class="d-flex justify-content-between align-items-center">
                         <a href="/wine/{{ wine.match_id }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-eye"></i> View Details
+                            <i class="bi bi-eye"></i> Details
                         </a>
                         <a href="https://systembolaget.se/sortiment/vin/?q={{ wine.product_number }}" 
                            target="_blank" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-shop"></i> Buy at Systembolaget
+                            <i class="bi bi-cart"></i> Buy
                         </a>
                     </div>
-                    
-                    {% if wine.match_score %}
-                    <div class="mt-2">
-                        <small class="text-muted">
-                            Match Score: {{ "%.1f"|format(wine.match_score) }}%
-                        </small>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
     
-    <!-- Load More Button -->
-    <div class="text-center mt-4">
-        <button id="loadMoreBtn" class="btn btn-outline-primary" onclick="loadMoreWines()">
-            <i class="bi bi-arrow-down"></i> Load More Wines
-        </button>
+    <!-- Load More Button - only show if there are more wines than initially displayed -->
+    {% if wines|length > 9 %}
+    <div class="text-center mt-4" id="loadMoreContainer">
+        <a href="/filters?sort=date_desc" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-down"></i> Show More Wines
+        </a>
     </div>
+    {% endif %}
     
     <!-- No Results -->
     <div id="noResults" class="text-center py-3" style="display: none;">
@@ -320,6 +166,30 @@
 
 {% block extra_scripts %}
 <script>
+    // Show more wines on homepage
+    let visibleWines = 9;
+    const WINES_PER_PAGE = 9;
+    const totalWines = {{ wines|length }};
+    
+    function showMoreWines() {
+        const wineItems = document.querySelectorAll('.wine-item');
+        const nextBatch = Math.min(visibleWines + WINES_PER_PAGE, totalWines);
+        
+        for (let i = visibleWines; i < nextBatch; i++) {
+            if (wineItems[i]) {
+                wineItems[i].style.display = '';
+            }
+        }
+        
+        visibleWines = nextBatch;
+        document.getElementById('visibleCount').textContent = visibleWines;
+        
+        // Hide button if all wines are shown
+        if (visibleWines >= totalWines) {
+            document.getElementById('loadMoreContainer').style.display = 'none';
+        }
+    }
+    
     // Load filter options from API
     async function loadFilterOptions() {
         try {

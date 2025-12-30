@@ -1,0 +1,32 @@
+[
+  {
+    "id": "budget_under_150",
+    "name": "Best Wines Under 150 SEK",
+    "category": "budget",
+    "description": "Top-rated wines under 150 SEK available at Systembolaget, sorted by Vivino rating.",
+    "wines": [
+      "vivino_6527947_price_id_34991087",
+      "vivino_2316699_price_id_36350055",
+      "vivino_4405548_year_2016_price_id_36350020",
+      "vivino_2678854_year_2021_price_id_36349887",
+      "vivino_1100196_price_id_36349956",
+      "vivino_1410470_year_2021_price_id_36349894",
+      "vivino_12655079_price_id_38147655",
+      "vivino_1942864_year_2020_price_id_36349916",
+      "vivino_2264059_year_2023_price_id_15500635",
+      "vivino_5453493_year_2022_price_id_36349981",
+      "vivino_1147982_year_2011",
+      "vivino_5764568_year_2019_price_id_36349929",
+      "vivino_1209812_year_2019_price_id_36349865",
+      "vivino_1165743_year_2021_price_id_28582063",
+      "vivino_1311766_year_2010",
+      "vivino_2472462_year_2019_price_id_33307418",
+      "4",
+      "vivino_79384_year_2014",
+      "vivino_2316884_year_2014"
+    ],
+    "wine_count": 19,
+    "created_at": "2025-12-29T23:16:34.722672",
+    "updated_at": "2025-12-29T23:16:34.723035"
+  }
+]

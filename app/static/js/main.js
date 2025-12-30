@@ -207,6 +207,9 @@ async function applyFilters() {
         return element ? (element.value || fallback) : fallback;
     }
     
+    // Get search term from either navbar or filter panel
+    const searchValue = getElementValue('searchInput') || getElementValue('searchTerm') || '';
+    
     window.currentFilters = {
         ...window.currentFilters,
         page: 1, // Reset to first page
@@ -216,7 +219,7 @@ async function applyFilters() {
         max_rating: parseFloat(getElementValue('maxRating')) || undefined,
         wine_style: getElementValue('wineStyle'),
         country: getElementValue('country'),
-        search_term: getElementValue('searchTerm'),
+        search_term: searchValue,
         sort_by: getElementValue('sortBy', 'rating'),
         sort_order: getElementValue('sortOrder', 'desc')
     };
@@ -258,6 +261,15 @@ function clearFilters() {
 
 // Load wines with filters
 async function loadWines(replace = false) {
+    console.log('loadWines called, replace:', replace);
+    console.trace('loadWines caller');
+    
+    // Skip on filters page - it has its own loading logic
+    if (document.getElementById('wineFiltersForm')) {
+        console.log('Skipping main.js loadWines on filters page');
+        return;
+    }
+    
     if (window.isLoading) return;
     
     window.isLoading = true;
@@ -272,7 +284,9 @@ async function loadWines(replace = false) {
             }
         });
         
-        const response = await fetch(`/api/wines?${params}`);
+        const url = `/api/wines?${params}`;
+        console.log('Fetching wines from:', url);
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -295,6 +309,11 @@ async function loadWines(replace = false) {
 
 // Display wines in grid
 function displayWines(wines, replace = false) {
+    // Skip on filters page - it has its own display logic
+    if (document.getElementById('wineFiltersForm')) {
+        return;
+    }
+    
     const grid = document.getElementById('wineGrid');
     
     // Check if grid exists
@@ -342,38 +361,79 @@ function createWineCard(wine) {
     const div = document.createElement('div');
     div.className = 'col-lg-6 col-xl-4 mb-4';
     
-    const verifiedBadge = wine.verified ? 
-        '<span class="badge bg-success ms-1"><i class="bi bi-check-circle"></i> Verified</span>' : '';
+    const price = wine.price ? `${Math.round(wine.price)} SEK` : 'N/A';
     
-    const price = wine.price ? `${Math.round(wine.price)} SEK` : 'Price N/A';
+    // Wine style with color class
+    const style = wine.vivino_wine_style || wine.wine_style || '';
+    const styleClass = style.toLowerCase().includes('red') ? 'wine-style-red' :
+                       style.toLowerCase().includes('white') ? 'wine-style-white' :
+                       style.toLowerCase().includes('rosé') || style.toLowerCase().includes('rose') ? 'wine-style-rose' :
+                       style.toLowerCase().includes('sparkling') || style.toLowerCase().includes('champagne') || style.toLowerCase().includes('prosecco') ? 'wine-style-sparkling' :
+                       style.toLowerCase().includes('dessert') || style.toLowerCase().includes('sweet') ? 'wine-style-dessert' :
+                       style.toLowerCase().includes('fortified') || style.toLowerCase().includes('port') || style.toLowerCase().includes('sherry') ? 'wine-style-fortified' :
+                       'wine-style-other';
+    const wineStyleBadge = style ? `<span class="badge ${styleClass}">${style}</span>` : '';
     
-    // Enhanced wine information
-    const vivinoWineStyle = wine.vivino_wine_style ? `<span class="badge bg-primary me-1">${wine.vivino_wine_style}</span>` : '';
-    const systembolagetStyle = wine.wine_style ? `<span class="badge bg-secondary me-1">${wine.wine_style}</span>` : '';
-    const vivinoCountry = wine.vivino_country ? `<span class="badge bg-outline-info me-1"><i class="bi bi-geo-alt"></i> ${wine.vivino_country}</span>` : '';
-    const country = wine.country ? `<span class="badge bg-outline-secondary me-1">${wine.country}</span>` : '';
-    const year = wine.year ? `<span class="badge bg-outline-secondary">${wine.year}</span>` : '';
-    const producer = wine.producer ? `<p class="text-muted small mt-2 mb-1"><i class="bi bi-building"></i> ${wine.producer}</p>` : '';
-    const winery = wine.vivino_winery ? `<p class="text-muted small mt-2 mb-1"><i class="bi bi-house"></i> ${wine.vivino_winery}</p>` : '';
-    const region = wine.vivino_region ? `<p class="text-muted small mb-1"><i class="bi bi-map"></i> ${wine.vivino_region}</p>` : '';
-    
-    // Alcohol content (prefer vivino data)
-    const alcoholContent = wine.vivino_alcohol_content || wine.alcohol_percentage;
-    const alcohol = alcoholContent ? `<p class="text-muted small mb-2"><i class="bi bi-percent"></i> ${alcoholContent}% vol</p>` : '';
-    
-    // Wine characteristics
-    const characteristics = [];
-    if (wine.body) {
-        const bodyText = wine.body <= 2 ? 'Light' : wine.body <= 3 ? 'Medium' : 'Full';
-        characteristics.push(`<span class="badge bg-info me-1"><i class="bi bi-droplet"></i> ${bodyText} Body</span>`);
+    // Country emoji
+    const country = wine.vivino_country || wine.country || '';
+    const countryEmojis = {
+        'spain': '🇪🇸', 'spanien': '🇪🇸',
+        'france': '🇫🇷', 'frankrike': '🇫🇷',
+        'italy': '🇮🇹', 'italien': '🇮🇹',
+        'germany': '🇩🇪', 'tyskland': '🇩🇪',
+        'portugal': '🇵🇹',
+        'australia': '🇦🇺', 'australien': '🇦🇺',
+        'chile': '🇨🇱',
+        'argentina': '🇦🇷',
+        'usa': '🇺🇸', 'united states': '🇺🇸',
+        'south africa': '🇿🇦', 'sydafrika': '🇿🇦',
+        'new zealand': '🇳🇿', 'nya zeeland': '🇳🇿',
+        'austria': '🇦🇹', 'österrike': '🇦🇹',
+        'greece': '🇬🇷', 'grekland': '🇬🇷',
+        'lebanon': '🇱🇧', 'libanon': '🇱🇧',
+        'north macedonia': '🇲🇰', 'nordmakedonien': '🇲🇰'
+    };
+    const countryLower = country.toLowerCase();
+    let countryEmoji = '🌍';
+    for (const [key, emoji] of Object.entries(countryEmojis)) {
+        if (countryLower.includes(key)) {
+            countryEmoji = emoji;
+            break;
+        }
     }
-    if (wine.acidity) {
-        const acidityText = wine.acidity <= 2 ? 'Low' : wine.acidity <= 3 ? 'Medium' : 'High';
-        characteristics.push(`<span class="badge bg-warning text-dark me-1"><i class="bi bi-lightning"></i> ${acidityText} Acidity</span>`);
-    }
-    const characteristicsHtml = characteristics.length > 0 ? `<div class="mb-2">${characteristics.join('')}</div>` : '';
+    const countryBadge = country ? `<span class="badge bg-light text-dark" title="${country}">${countryEmoji}</span>` : '';
     
-    const matchScore = wine.match_score ? `<div class="mt-2"><small class="text-muted">Match Score: ${wine.match_score.toFixed(1)}%</small></div>` : '';
+    // Match score
+    const matchClass = wine.match_score >= 80 ? 'match-high' : wine.match_score >= 50 ? 'match-medium' : 'match-low';
+    const matchBadgeClass = wine.match_score >= 80 ? 'bg-success' : wine.match_score >= 50 ? 'bg-warning text-dark' : 'bg-danger';
+    
+    // Compact meta line
+    const wineryName = wine.vivino_winery || wine.producer || '';
+    const alcoholContent = wine.vivino_alcohol_content || wine.alcohol_percentage || '';
+    
+    let metaParts = [];
+    if (country) metaParts.push(`<span class="me-2"><i class="bi bi-geo-alt"></i> ${country}</span>`);
+    if (wineryName) metaParts.push(`<span class="me-2"><i class="bi bi-house"></i> ${wineryName}</span>`);
+    if (alcoholContent) metaParts.push(`<span><i class="bi bi-percent"></i> ${alcoholContent}%</span>`);
+    const wineMeta = metaParts.length > 0 ? `<div class="wine-meta text-muted small mb-2">${metaParts.join('')}</div>` : '';
+    
+    // Food pairings
+    const pairingEmojis = {
+        'beef': '🥩', 'pork': '🥓', 'lamb': '🐑', 'game': '🦌',
+        'poultry': '🐔', 'chicken': '🐔', 'duck': '🦆',
+        'fish': '🐟', 'shellfish': '🦐', 'seafood': '🦐',
+        'cheese': '🧀', 'vegetables': '🥬', 'vegetarian': '🥬', 'pasta': '🍝',
+        'appetizer': '🥂', 'appetizers': '🥂', 'dessert': '🍰', 'desserts': '🍰',
+        'chocolate': '🍫', 'nuts': '🥜'
+    };
+    let foodPairingsHtml = '';
+    if (wine.simplified_food_pairings && wine.simplified_food_pairings.length > 0) {
+        foodPairingsHtml = wine.simplified_food_pairings.slice(0, 4).map(p => {
+            const emoji = pairingEmojis[p.toLowerCase()] || '🍽️';
+            const label = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+            return `<span class="badge bg-light text-dark me-1">${emoji} ${label}</span>`;
+        }).join('');
+    }
     
     // Wine image with fallback
     const wineImage = wine.image_url ? 
@@ -397,50 +457,41 @@ function createWineCard(wine) {
     
     div.innerHTML = `
         <div class="wine-card card h-100">
-            <div class="card-header d-flex justify-content-between align-items-start">
-                <div class="wine-rating">
-                    <span class="badge bg-warning text-dark">
-                        <i class="bi bi-star-fill"></i> ${wine.vivino_rating}
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-1">
+                    <span class="badge ${wine.vivino_rating ? 'bg-warning text-dark' : 'bg-secondary'}">
+                        <i class="bi bi-star-fill"></i> ${wine.vivino_rating || 'N/A'}
                     </span>
-                    ${verifiedBadge}
+                    ${wineStyleBadge}
+                    ${countryBadge}
                 </div>
-                <div class="wine-price text-end">
-                    <strong class="text-primary">${price}</strong>
-                </div>
+                <span class="badge bg-dark">${price}</span>
             </div>
             
             ${wineImage}
             
             <div class="card-body">
-                <h5 class="card-title wine-name">${wine.vivino_name}</h5>
-                <h6 class="card-subtitle text-muted mb-2">${wine.systembolaget_name}</h6>
-                
-                <div class="wine-details mb-2">
-                    ${vivinoWineStyle}
-                    ${systembolagetStyle}
-                    ${vivinoCountry}
-                    ${year}
+                <div class="wine-title-container ${matchClass}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="card-title fw-bold mb-1">${wine.systembolaget_name}</h5>
+                            ${wine.vivino_name && wine.vivino_name !== wine.systembolaget_name ? `<p class="text-muted small mb-0 fst-italic">${wine.vivino_name}</p>` : ''}
+                        </div>
+                        ${wine.match_score ? `<span class="badge ${matchBadgeClass} ms-2">${Math.round(wine.match_score)}%</span>` : ''}
+                    </div>
                 </div>
-                
-                ${characteristicsHtml}
-                
-                ${winery}
-                ${region}
-                ${producer}
-                ${alcohol}
             </div>
             
             <div class="card-footer bg-transparent">
                 <div class="d-flex justify-content-between align-items-center">
                     <a href="/wine/${wine.match_id}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-eye"></i> View Details
+                        <i class="bi bi-eye"></i> Details
                     </a>
                     <a href="https://systembolaget.se/sortiment/vin/?q=${wine.product_number}" 
                        target="_blank" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-shop"></i> Buy
+                        <i class="bi bi-cart"></i> Buy
                     </a>
                 </div>
-                ${matchScore}
             </div>
         </div>
     `;

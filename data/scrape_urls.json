@@ -1,0 +1,16 @@
+[
+  {
+    "url": "https://www.vivino.com/toplists/best-wines-under-100-kr-right-now-sweden",
+    "id": "vivino_under_100",
+    "name": "Best Wines Under 150 SEK",
+    "category": "default",
+    "description": "Top 25 wines under 150 kr as rated by Vivino users in Sweden."
+  },
+  {
+    "url": "https://www.vivino.com/en/toplists/best-wines-between-100-kr-and-200-kr-right-now-sweden",
+    "id": "best_wines_between_100_kr_and_",
+    "name": "Best Wines Between 100 Kr And 200 Kr Right Now Sweden",
+    "category": "default",
+    "description": "Wines from Vivino toplist: Best Wines Between 100 Kr And 200 Kr Right Now Sweden"
+  }
+]

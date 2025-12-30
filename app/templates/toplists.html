@@ -11,21 +11,9 @@
                 <h1 class="display-5 fw-bold text-wine-red mb-3">
                     <i class="bi bi-list-ol"></i> Wine Toplists
                 </h1>
-                <p class="lead text-muted mb-4">
-                    Discover curated collections of the best wines from Vivino, available at Systembolaget. 
-                    Each toplist represents a carefully selected group of wines based on specific criteria.
+                <p class="lead text-muted mb-0">
+                    Discover curated collections of the best wines from Vivino, available at Systembolaget.
                 </p>
-                
-                <div class="stat-card d-inline-block p-3 bg-white rounded shadow-sm">
-                    <div class="h4 mb-1 text-primary">{{ total_toplists }}</div>
-                    <div class="small text-muted">
-                        {% if current_category %}
-                            {{ current_category|title }} Toplists
-                        {% else %}
-                            Curated Toplists
-                        {% endif %}
-                    </div>
-                </div>
             </div>
             
             <div class="col-lg-4 text-lg-end">

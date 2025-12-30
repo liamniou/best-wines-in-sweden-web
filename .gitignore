@@ -1,7 +1,31 @@
+# IDE
 .idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
 venv/
-__pycache__
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Environment
 .env
+.env.local
 
 # Database and cache data
-data/
+data/postgres/
+data/redis/
+
+# Generated static site (regenerate with make generate)
+app/static_site/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

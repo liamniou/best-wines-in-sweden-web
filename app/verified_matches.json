@@ -1,0 +1,30 @@
+{
+  "description": "Manually verified matches from interactive session",
+  "matches": [
+    {"vivino_winery": "Astrale", "vivino_name": "Astrale Special Edition 2018", "sb_product": null, "status": "no_match"},
+    {"vivino_winery": "Félix Solís", "vivino_name": "Mucho Más Tinto N.V.", "sb_product": "5234001", "sb_name": "Mucho Mas"},
+    {"vivino_winery": "Casa Ermelinda Freitas", "vivino_name": "Vinha do Fava 2020", "sb_product": null, "status": "no_match"},
+    {"vivino_winery": "Castello di Cigognola", "vivino_name": "Barberasso Barbera 2018", "sb_product": null, "status": "no_match"},
+    {"vivino_winery": "19 Crimes", "vivino_name": "Red Blend", "sb_product": "7396801", "sb_name": "19 Crimes Red Wine"},
+    {"vivino_winery": "Masso Antico", "vivino_name": "Appassito Primitivo 2015", "sb_product": null, "status": "no_match"},
+    {"vivino_winery": "Hans Baer", "vivino_name": "Riesling Trocken", "sb_product": "7693401", "sb_name": "Hans Baer Riesling Trocken"},
+    {"vivino_winery": "Girovago", "vivino_name": "Il Guardiano Dell'uva Appassimento", "sb_product": null, "status": "no_match"},
+    {"vivino_winery": "Ramón Bilbao", "vivino_name": "Crianza Rioja 2018", "sb_product": "7829201", "sb_name": "Ramón Bilbao Crianza"},
+    {"vivino_winery": "El Coto", "vivino_name": "Coto de Imaz Rioja Reserva 2015", "sb_product": "265901", "sb_name": "Coto de Imaz Reserva"},
+    {"vivino_winery": "Casa Marzoni", "vivino_name": "Appassimento 2016", "sb_product": "7357001", "sb_name": "Casa Marzoni Appassimento"},
+    {"vivino_winery": "Delas", "vivino_name": "Saint-Esprit Côtes-du-Rhône 2021", "sb_product": "7183201", "sb_name": "Côtes du Rhône Saint-Esprit"},
+    {"vivino_winery": "Dreissigacker", "vivino_name": "Riesling Organic Dry 2021", "sb_product": "229401", "sb_name": "Dreissigacker Riesling Organic Trocken"},
+    {"vivino_winery": "Tikveš", "vivino_name": "Luda Mara Vranec", "sb_product": null, "status": "no_match"},
+    {"vivino_winery": "Château d'Agel", "vivino_name": "Les Bonnes Limited Edition Reserve 2022", "sb_product": null, "status": "no_match"},
+    {"vivino_winery": "Saint Clair Family Estate", "vivino_name": "Vicar's Choice Sauvignon Blanc 2019", "sb_product": "1200001", "sb_name": "Saint Clair Vicar's Choice Sauvignon Blanc"},
+    {"vivino_winery": "Heinrich", "vivino_name": "Pinot Noir 2021", "sb_product": "2011001", "sb_name": "Heinrich Pinot Noir"},
+    {"vivino_winery": "Dreissigacker", "vivino_name": "Weissburgunder", "sb_product": "9025001", "sb_name": "Dreissigacker Weissburgunder"},
+    {"vivino_winery": "Gadais Pere & Fils", "vivino_name": "Muscadet Sevre et Maine Sur Lie 2023", "sb_product": "227501", "sb_name": "Muscadet Sèvre et Maine sur lie"},
+    {"vivino_winery": "Penfolds", "vivino_name": "Koonunga Hill Shiraz - Cabernet 2016", "sb_product": "625301", "sb_name": "Penfolds Koonunga Hill Shiraz Cabernet"},
+    {"vivino_winery": "Giacosa Fratelli", "vivino_name": "Nebbiolo Leunin 2018", "sb_product": "7748801", "sb_name": "Langhe Nebbiolo Leunin"},
+    {"vivino_winery": "Paul Jaboulet Aîné", "vivino_name": "Parallèle 45 Côtes du Rhône Rouge Bio", "sb_product": "2280001", "sb_name": "Paul Jaboulet Parallèle 45 Rouge"},
+    {"vivino_winery": "Fontanafredda", "vivino_name": "Raimonda Barbera d'Alba 2018", "sb_product": "7159601", "sb_name": "Raimonda Barbera d'Alba"},
+    {"vivino_winery": "Fortellino", "vivino_name": "Valpolicella Ripasso Superiore 2018", "sb_product": "7684501", "sb_name": "Fortellino Ripasso Superiore"},
+    {"vivino_winery": "Enzo Bartoli", "vivino_name": "Nebbiolo 2018", "sb_product": "7366301", "sb_name": "Enzo Bartoli Langhe Nebbiolo"}
+  ]
+}
