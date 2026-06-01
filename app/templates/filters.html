@@ -104,9 +104,9 @@
         <!-- Wine results will be loaded here -->
     </div>
     
-    <div class="text-center mt-4">
+    <div class="d-flex justify-content-center mt-4">
         <button id="loadMoreBtn" class="btn btn-outline-primary" style="display: none;" onclick="handleLoadMore()">
-            <i class="bi bi-arrow-down"></i> Load More Results
+            <i class="bi bi-arrow-down"></i> Show More Wines
         </button>
     </div>
 </div>
@@ -121,7 +121,7 @@ window.winesLoaded = false;
 // Load all wines on page load for client-side filtering
 async function loadAllWines() {
     try {
-        const response = await fetch('/api/wines');
+        const response = await fetch('/api/wines?page_size=1000');
         window.allWines = await response.json();
         window.winesLoaded = true;
         console.log(`Loaded ${window.allWines.length} wines for filtering`);
@@ -493,8 +493,8 @@ function createWineCard(wine) {
                 <div class="wine-title-container ${wine.match_score >= 80 ? 'match-high' : wine.match_score >= 50 ? 'match-medium' : 'match-low'}">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
-                            <p class="card-title fw-bold mb-1 fs-6">${wine.systembolaget_name}</p>
-                            ${wine.vivino_name && wine.vivino_name !== wine.systembolaget_name ? `<p class="text-muted mb-0 fst-italic fs-6">${wine.vivino_name}</p>` : ''}
+                            <p class="wine-name mb-1">${wine.systembolaget_name}</p>
+                            ${wine.vivino_name && wine.vivino_name !== wine.systembolaget_name ? `<p class="wine-name-secondary mb-0">${wine.vivino_name}</p>` : ''}
                         </div>
                         ${wine.match_score ? `<span class="badge ${wine.match_score >= 80 ? 'bg-success' : wine.match_score >= 50 ? 'bg-warning text-dark' : 'bg-danger'} ms-2">${Math.round(wine.match_score)}%</span>` : ''}
                     </div>
@@ -503,12 +503,12 @@ function createWineCard(wine) {
             
             <div class="card-footer bg-transparent">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="/wine/${wine.match_id}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-eye"></i> Details
+                    <a href="${wine.vivino_url}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-box-arrow-up-right"></i> Vivino
                     </a>
                     <a href="https://systembolaget.se/sortiment/vin/?q=${wine.product_number}" 
-                       target="_blank" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-cart"></i> Buy
+                       target="_blank" class="btn btn-primary btn-sm">
+                        <i class="bi bi-shop"></i> Buy
                     </a>
                 </div>
             </div>

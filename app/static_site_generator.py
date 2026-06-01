@@ -223,6 +223,20 @@ def generate_static_site():
     (OUTPUT_DIR / "filters.html").write_text(html, encoding='utf-8')
     logger.info("Generated filters.html")
     
+    # Calculate toplist statistics before rendering
+    for toplist in toplists:
+        scraped_wines = toplist.get('scraped_wines', [])
+        
+        # Set wine count from scraped wines
+        toplist['wine_count'] = len(scraped_wines)
+        
+        # Calculate average rating from scraped wines
+        ratings = [w.get('rating') for w in scraped_wines if w.get('rating')]
+        if ratings:
+            toplist['avg_rating'] = round(sum(ratings) / len(ratings), 1)
+        else:
+            toplist['avg_rating'] = None
+    
     # Generate toplists.html
     template = env.get_template('toplists.html')
     html = template.render(toplists=toplists)
@@ -236,34 +250,51 @@ def generate_static_site():
     try:
         template = env.get_template('toplist.html')
         
-        # Create a lookup dictionary for wines by match_id
-        wines_by_id = {w.get('match_id'): w for w in all_wines}
+        # Create a lookup dictionary for matched wines by their vivino_id
+        # The match_id format is like "toplist_best_wines_under_100_kr_right__1"
+        matched_wines_lookup = {}
+        for w in all_wines:
+            match_id = w.get('match_id', '')
+            if match_id:
+                matched_wines_lookup[match_id] = w
         
         for toplist in toplists:
-            # Get wines for this toplist
-            toplist_wine_ids = toplist.get('wines', [])
             toplist_wines = []
+            toplist_id = toplist.get('id', '')
             
-            # First try to get wines by match_id
-            for wine_id in toplist_wine_ids:
-                if wine_id in wines_by_id:
-                    toplist_wines.append(wines_by_id[wine_id])
-            
-            # If no wines found, use scraped_wines directly
-            if not toplist_wines and toplist.get('scraped_wines'):
-                for scraped in toplist.get('scraped_wines', []):
-                    winery = scraped.get('winery', '')
-                    name = scraped.get('name', '')
-                    
+            # Always use scraped_wines and merge match data if available
+            for scraped in toplist.get('scraped_wines', []):
+                rank = scraped.get('rank', 0)
+                winery = scraped.get('winery', '')
+                name = scraped.get('name', '')
+                
+                # Build the expected match_id for this wine
+                expected_match_id = f"toplist_{toplist_id}_{rank}"
+                matched_wine = matched_wines_lookup.get(expected_match_id)
+                
+                if matched_wine:
+                    # Use the matched wine data (has Systembolaget info)
+                    toplist_wines.append(matched_wine)
+                else:
                     # Create display name - avoid duplication if winery is in name
                     if winery.lower() in name.lower():
                         display_name = name
                     else:
                         display_name = f"{winery} {name}".strip()
                     
+                    # Get image URL (prefer local, fallback to Vivino URL)
+                    image_url = scraped.get('local_image')
+                    if not image_url:
+                        vivino_img = scraped.get('vivino_image_url', '')
+                        # Fix protocol-relative URLs
+                        if vivino_img.startswith('//'):
+                            image_url = 'https:' + vivino_img
+                        elif vivino_img:
+                            image_url = vivino_img
+                    
                     # Convert scraped wine to the format expected by the template
                     wine = {
-                        'match_id': f"scraped_{scraped.get('rank', 0)}",
+                        'match_id': None,  # No match_id for unmatched wines
                         'vivino_name': name,
                         'vivino_winery': winery,
                         'vivino_rating': scraped.get('rating'),
@@ -272,11 +303,13 @@ def generate_static_site():
                         'vivino_region': scraped.get('region'),
                         'price': scraped.get('price'),
                         'systembolaget_name': display_name,
-                        'vivino_wine_style': 'Red Wine' if 'red' in (name + scraped.get('region', '')).lower() else 
-                                            'White Wine' if 'white' in (name + scraped.get('region', '')).lower() or 'riesling' in name.lower() else
-                                            None,
-                        'match_score': 100,  # From Vivino toplist, treat as high quality match
-                        'image_url': None,  # No image from scraped data
+                        'vivino_wine_style': scraped.get('wine_style') or (
+                            'Red Wine' if 'red' in (name + scraped.get('region', '')).lower() else 
+                            'White Wine' if 'white' in (name + scraped.get('region', '')).lower() or 'riesling' in name.lower() else
+                            None),
+                        'match_score': None,  # Not matched
+                        'image_url': image_url,
+                        'vivino_url': scraped.get('vivino_url'),
                         'simplified_food_pairings': [],
                     }
                     toplist_wines.append(wine)

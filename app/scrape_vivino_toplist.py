@@ -181,16 +181,18 @@ async def scrape_toplist_with_images(url: str, toplist_id: str, name: str, categ
             image_url = None
         
         if image_url:
-            # Create a unique filename based on wine info
+            # Create folder per toplist, filename is just rank + wine name
             safe_name = re.sub(r'[^\w\s-]', '', f"{wine.get('winery', '')}_{wine.get('name', '')}").strip().replace(' ', '_')[:50]
-            image_filename = f"{toplist_id}_{wine['rank']}_{safe_name}.png"
-            image_path = IMAGES_DIR / image_filename
+            image_filename = f"{wine['rank']}_{safe_name}.png"
+            toplist_images_dir = IMAGES_DIR / toplist_id
+            toplist_images_dir.mkdir(parents=True, exist_ok=True)
+            image_path = toplist_images_dir / image_filename
             
             print(f"  Downloading image for #{wine['rank']}: {wine.get('winery', '')} - {wine.get('name', '')}...")
             
             if await download_image(image_url, image_path):
-                wine['local_image'] = f"/images/wines/{image_filename}"
-                print(f"    ✅ Saved: {image_filename}")
+                wine['local_image'] = f"/images/wines/{toplist_id}/{image_filename}"
+                print(f"    ✅ Saved: {toplist_id}/{image_filename}")
             else:
                 print(f"    ❌ Failed to download")
         else:
@@ -216,10 +218,33 @@ async def scrape_toplist_with_images(url: str, toplist_id: str, name: str, categ
         'updated_at': datetime.now().isoformat()
     }
     
-    # Save
+    # Save - append to existing toplists or update existing entry
     toplists_file = DATA_DIR / "toplists.json"
-    toplists_file.write_text(json.dumps([toplist], indent=2, ensure_ascii=False))
-    print(f"\nSaved to {toplists_file}")
+    existing_toplists = []
+    if toplists_file.exists():
+        try:
+            with open(toplists_file, 'r', encoding='utf-8') as f:
+                existing_toplists = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            existing_toplists = []
+    
+    # Find and update existing toplist or add new one
+    toplist_updated = False
+    for i, existing in enumerate(existing_toplists):
+        if existing.get('id') == toplist['id']:
+            # Keep created_at from existing, update the rest
+            toplist['created_at'] = existing.get('created_at', toplist['created_at'])
+            existing_toplists[i] = toplist
+            toplist_updated = True
+            print(f"\nUpdated existing toplist: {toplist['id']}")
+            break
+    
+    if not toplist_updated:
+        existing_toplists.append(toplist)
+        print(f"\nAdded new toplist: {toplist['id']}")
+    
+    toplists_file.write_text(json.dumps(existing_toplists, indent=2, ensure_ascii=False))
+    print(f"Saved to {toplists_file} ({len(existing_toplists)} toplists)")
     
     return toplist
 
@@ -360,74 +385,6 @@ async def extract_wine_images_directly(page) -> Dict[int, str]:
     return images
 
 
-async def prompt_for_missing_images(wines: list) -> list:
-    """Prompt user to provide URLs for wines missing images."""
-    print("\n" + "=" * 60)
-    print("MISSING IMAGES")
-    print("=" * 60)
-    
-    # Check both: no local_image set OR file doesn't exist on disk
-    missing = []
-    for w in wines:
-        local_img = w.get('local_image')
-        if not local_img:
-            missing.append(w)
-        else:
-            # Check if file actually exists
-            img_path = IMAGES_DIR / local_img.split('/')[-1]
-            if not img_path.exists():
-                print(f"  ⚠️  File missing: {local_img}")
-                w['local_image'] = None  # Clear the broken reference
-                missing.append(w)
-    
-    if not missing:
-        print("All wines have images!")
-        return wines
-    
-    print(f"\n{len(missing)} wines are missing images:")
-    for w in missing:
-        print(f"  #{w['rank']}: {w.get('winery', '')} - {w.get('name', '')}")
-    
-    print("\nYou can provide image URLs for missing wines.")
-    print("Press Enter to skip, or 'q' to finish.\n")
-    
-    for wine in missing:
-        print(f"\n#{wine['rank']}: {wine.get('winery', '')} - {wine.get('name', '')}")
-        print(f"  Vivino URL: {wine.get('vivino_url', 'N/A')}")
-        
-        url = input("  Image URL (Enter to skip, 'q' to quit): ").strip()
-        
-        if url.lower() == 'q':
-            break
-        
-        if url:
-            # Handle protocol-relative URLs
-            if url.startswith('//'):
-                url = 'https:' + url
-            
-            # Skip flag images
-            if 'countryFlags' in url or '/flags/' in url.lower():
-                print("  ⚠️  Skipping flag image")
-                continue
-            
-            # Download the image
-            safe_name = re.sub(r'[^\w\s-]', '', f"{wine.get('winery', '')}_{wine.get('name', '')}").strip().replace(' ', '_')[:50]
-            # Get toplist_id from wine or use default
-            toplist_id = wine.get('toplist_id', 'manual')
-            image_filename = f"{toplist_id}_{wine['rank']}_{safe_name}.png"
-            image_path = IMAGES_DIR / image_filename
-            
-            print(f"  Downloading...")
-            if await download_image(url, image_path):
-                wine['local_image'] = f"/images/wines/{image_filename}"
-                wine['vivino_image_url'] = url
-                print(f"  ✅ Saved: {image_filename}")
-            else:
-                print(f"  ❌ Failed to download")
-    
-    return wines
-
-
 def interactive_mode():
     """Interactive mode for scraping toplists."""
     print("\n" + "=" * 60)
@@ -535,16 +492,18 @@ async def main():
                     for wine in wines:
                         if wine.get('rank') == rank:
                             wine_found = True
-                            # Download the image
+                            # Download the image to toplist folder
                             safe_name = re.sub(r'[^\w\s-]', '', f"{wine.get('winery', '')}_{wine.get('name', '')}").strip().replace(' ', '_')[:50]
-                            image_filename = f"{toplist_id}_{rank}_{safe_name}.png"
-                            image_path = IMAGES_DIR / image_filename
+                            toplist_images_dir = IMAGES_DIR / toplist_id
+                            toplist_images_dir.mkdir(parents=True, exist_ok=True)
+                            image_filename = f"{rank}_{safe_name}.png"
+                            image_path = toplist_images_dir / image_filename
+                            local_image_path = f"/images/wines/{toplist_id}/{image_filename}"
                             
-                            print(f"  Downloading to: {image_filename}")
-                            IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+                            print(f"  Downloading to: {toplist_id}/{image_filename}")
                             
                             if await download_image(image_url, image_path):
-                                wine['local_image'] = f"/images/wines/{image_filename}"
+                                wine['local_image'] = local_image_path
                                 wine['vivino_image_url'] = image_url
                                 print(f"  ✅ Saved!")
                                 
@@ -557,14 +516,14 @@ async def main():
                                     for w in wines_data:
                                         # Try match by match_id first
                                         if w.get('match_id') == wine_id:
-                                            w['image_url'] = f"/images/wines/{image_filename}"
+                                            w['image_url'] = local_image_path
                                             updated = True
                                             print(f"  ✅ Updated wines.json (by match_id)")
                                             break
                                         # Also try by vivino_rank + winery
                                         if (w.get('vivino_rank') == rank and 
                                             w.get('winery') == wine.get('winery')):
-                                            w['image_url'] = f"/images/wines/{image_filename}"
+                                            w['image_url'] = local_image_path
                                             updated = True
                                             print(f"  ✅ Updated wines.json (by vivino_rank)")
                                             break
@@ -589,7 +548,7 @@ async def main():
             return
         
         elif sys.argv[1] == '--url' and len(sys.argv) > 2:
-            # Direct URL mode - add to scrape_urls.json and scrape
+            # Direct URL mode - scrape and add/update in toplists.json
             url = sys.argv[2]
             url_path = url.split('/')[-1]
             toplist_id = re.sub(r'[^a-z0-9]+', '_', url_path.lower())[:30]
@@ -597,28 +556,19 @@ async def main():
             description = f"Wines from Vivino toplist: {name}"
             category = "default"
             
-            # Add to scrape_urls.json if not already present
-            urls_file = DATA_DIR / "scrape_urls.json"
-            urls_list = []
-            if urls_file.exists():
-                with open(urls_file, 'r', encoding='utf-8') as f:
-                    urls_list = json.load(f)
+            # Check if already exists in toplists.json
+            toplists_file = DATA_DIR / "toplists.json"
+            existing_toplists = []
+            if toplists_file.exists():
+                try:
+                    with open(toplists_file, 'r', encoding='utf-8') as f:
+                        existing_toplists = json.load(f)
+                except (json.JSONDecodeError, FileNotFoundError):
+                    existing_toplists = []
             
-            # Check if URL already exists
-            existing_urls = [u.get('url') for u in urls_list]
-            if url not in existing_urls:
-                urls_list.append({
-                    "url": url,
-                    "id": toplist_id,
-                    "name": name,
-                    "category": category,
-                    "description": description
-                })
-                with open(urls_file, 'w', encoding='utf-8') as f:
-                    json.dump(urls_list, f, indent=2, ensure_ascii=False)
-                print(f"✅ Added URL to scrape_urls.json")
-            else:
-                print(f"ℹ️  URL already in scrape_urls.json")
+            existing_urls = [t.get('url') for t in existing_toplists]
+            if url in existing_urls:
+                print(f"ℹ️  URL already in toplists.json, will update")
         
         elif sys.argv[1] == '--fix-image' and len(sys.argv) >= 4:
             # Direct fix single image: --fix-image <wine_id> <image_url>
@@ -655,15 +605,16 @@ async def main():
             print(f"  Toplist ID: {tl_id}")
             print(f"  Rank: {rank}")
             
-            # Download the image
-            IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-            image_filename = f"{tl_id}_{rank}_manual.png"
-            image_path = IMAGES_DIR / image_filename
+            # Download the image to toplist folder
+            toplist_images_dir = IMAGES_DIR / tl_id
+            toplist_images_dir.mkdir(parents=True, exist_ok=True)
+            image_filename = f"{rank}_manual.png"
+            image_path = toplist_images_dir / image_filename
             
             print(f"  Downloading...")
             if await download_image(image_url, image_path):
-                local_image = f"/images/wines/{image_filename}"
-                print(f"  Saved: {image_filename}")
+                local_image = f"/images/wines/{tl_id}/{image_filename}"
+                print(f"  Saved: {tl_id}/{image_filename}")
                 
                 # Update wines.json
                 wines_file = DATA_DIR / "wines.json"
@@ -710,32 +661,35 @@ async def main():
         
         else:
             print("Usage:")
-            print("  python scrape_vivino_toplist.py                           # Interactive mode")
-            print("  python scrape_vivino_toplist.py --url <URL>               # Scrape specific URL")
-            print("  python scrape_vivino_toplist.py --fix-images              # Add missing images interactively")
+            print("  python scrape_vivino_toplist.py                           # Re-scrape all toplists")
+            print("  python scrape_vivino_toplist.py --url <URL>               # Add and scrape new toplist")
             print("  python scrape_vivino_toplist.py --fix-image <ID> <URL>    # Fix specific wine image")
             print("")
             print("Examples:")
+            print("  python scrape_vivino_toplist.py --url https://www.vivino.com/toplists/...")
             print("  python scrape_vivino_toplist.py --fix-image toplist_vivino_under_100_21 https://images.vivino.com/...")
             return
     else:
-        # Default mode: process all URLs from scrape_urls.json
-        urls_file = DATA_DIR / "scrape_urls.json"
-        if urls_file.exists():
-            with open(urls_file, 'r', encoding='utf-8') as f:
-                urls_list = json.load(f)
+        # Default mode: re-scrape all toplists from toplists.json
+        toplists_file = DATA_DIR / "toplists.json"
+        if toplists_file.exists():
+            try:
+                with open(toplists_file, 'r', encoding='utf-8') as f:
+                    toplists = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                toplists = []
             
-            if urls_list:
-                print(f"\n📋 Processing {len(urls_list)} URL(s) from scrape_urls.json\n")
-                for i, url_config in enumerate(urls_list, 1):
-                    url = url_config.get('url')
-                    toplist_id = url_config.get('id')
-                    name = url_config.get('name')
-                    category = url_config.get('category', 'default')
-                    description = url_config.get('description', '')
+            if toplists:
+                print(f"\n📋 Re-scraping {len(toplists)} toplist(s) from toplists.json\n")
+                for i, toplist in enumerate(toplists, 1):
+                    url = toplist.get('url')
+                    toplist_id = toplist.get('id')
+                    name = toplist.get('name')
+                    category = toplist.get('category', 'default')
+                    description = toplist.get('description', '')
                     
                     print(f"\n{'='*60}")
-                    print(f"[{i}/{len(urls_list)}] Scraping: {name}")
+                    print(f"[{i}/{len(toplists)}] Scraping: {name}")
                     print(f"{'='*60}")
                     
                     await scrape_toplist_with_images(
@@ -746,14 +700,14 @@ async def main():
                         description=description
                     )
                 
-                print(f"\n✅ Finished processing all {len(urls_list)} URLs!")
+                print(f"\n✅ Finished re-scraping all {len(toplists)} toplists!")
                 return
         
-        # Fallback to interactive mode if no URLs configured
+        # Fallback to interactive mode if no toplists exist
         try:
             url, toplist_id, name, category, description = interactive_mode()
         except (EOFError, KeyboardInterrupt):
-            print("\nNo URLs configured in scrape_urls.json. Add URLs with:")
+            print("\nNo toplists found. Add a new toplist with:")
             print("  make scrape-url URL=https://www.vivino.com/toplists/...")
             return
     
@@ -765,27 +719,6 @@ async def main():
         category=category,
         description=description
     )
-    
-    # Prompt for missing images
-    try:
-        toplists_file = DATA_DIR / "toplists.json"
-        if toplists_file.exists():
-            with open(toplists_file, 'r', encoding='utf-8') as f:
-                toplists = json.load(f)
-            
-            for toplist in toplists:
-                if toplist.get('id') == toplist_id:
-                    wines = toplist.get('scraped_wines', [])
-                    # Add toplist_id to each wine for image naming
-                    for w in wines:
-                        w['toplist_id'] = toplist_id
-                    wines = await prompt_for_missing_images(wines)
-                    toplist['scraped_wines'] = wines
-            
-            with open(toplists_file, 'w', encoding='utf-8') as f:
-                json.dump(toplists, f, indent=2, ensure_ascii=False)
-    except (EOFError, KeyboardInterrupt):
-        print("\nSkipping missing image prompts.")
 
 
 if __name__ == "__main__":

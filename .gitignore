@@ -29,3 +29,7 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Scraped/generated data
+data/*.json
+app/verified_matches.json

@@ -28,45 +28,31 @@ services:
     profiles:
       - generator
 
-  # PostgreSQL - only needed for legacy pipeline (optional)
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: best_wines
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d best_wines"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    profiles:
-      - legacy
-
-  # Legacy Data Pipeline (optional)
-  pipeline:
+  # Scrape Vivino toplists
+  scraper:
     build:
       context: .
       dockerfile: Dockerfile.web
     environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/best_wines
       - SUBSCRIPTION_KEY=${SUBSCRIPTION_KEY:-8d39a7340ee7439f8b4c1e995c8f3e4a}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MATCH_THRESHOLD=${MATCH_THRESHOLD:-70.0}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
-      - WINE_BASE_URL=${WINE_BASE_URL:-https://wines.tokyo3.eu}
-    depends_on:
-      postgres:
-        condition: service_healthy
     volumes:
       - ./app:/app
       - ./data:/app/data
-    command: python data_pipeline.py --init-db
+    command: python scrape_vivino_toplist.py
     profiles:
-      - legacy
+      - scraper
+
+  # Match scraped wines with Systembolaget products
+  matcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    environment:
+      - SUBSCRIPTION_KEY=${SUBSCRIPTION_KEY:-8d39a7340ee7439f8b4c1e995c8f3e4a}
+      - MATCH_THRESHOLD=${MATCH_THRESHOLD:-70.0}
+    volumes:
+      - ./app:/app
+      - ./data:/app/data
+    command: python match_toplist_wines.py
+    profiles:
+      - matcher

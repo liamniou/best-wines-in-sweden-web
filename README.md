@@ -1,173 +1,128 @@
 # 🍷 Best Wines Sweden
 
-A modern static website that finds the best wines from Vivino toplists available at Systembolaget (Swedish alcohol retailer). Features advanced filtering, real-time search, and detailed wine information.
-
-## ✨ Features
-
-- **🔍 Advanced Filtering** - Filter by price, rating, country, wine style, food pairings
-- **📱 Mobile Optimized** - Perfect experience on all devices  
-- **⚡ Client-side Search** - Instant filtering without server requests
-- **🍷 Wine Details** - Comprehensive wine information pages
-- **🔗 Direct Purchase** - Links to buy at Systembolaget
-- **📊 Match Scores** - Color-coded match percentage badges
-- **🥩 Food Pairings** - Emoji-based food pairing suggestions
-
-## 🏗️ Architecture
-
-This is a **static site** - no database required at runtime!
-
-```
-JSON Data → Static Site Generator → HTML Files → Static Server
-```
-
-- **Data**: Stored in `data/*.json` files
-- **Generator**: Builds 150+ HTML pages from templates
-- **Server**: Lightweight FastAPI serving static files
+Website that finds the best wines from Vivino toplists available at Systembolaget (Swedish alcohol retailer).
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Docker and Docker Compose
 
-### First Time Setup
+### First Time Setup (from scratch)
 ```bash
-make build          # Build Docker images
-make update         # Full pipeline: scrape → match → generate → restart
+# 1. Build Docker images
+make build
+
+# 2. Add your first Vivino toplist (prompts for URL)
+make scrape-url
+
+# 3. Match wines with Systembolaget (type 'a' for all)
+make match
+
+# 4. Generate the static website
+make generate
+
+# 5. Start the web server
+make start
 ```
 
 Then open: http://localhost:8005
 
 ### Daily Commands
 ```bash
-make start          # Start server
-make stop           # Stop server
-make update         # Refresh all data from Vivino
-make logs           # View server logs
+make start    # Start server
+make stop     # Stop server
+make scrape   # Re-scrape toplists (interactive)
+make match    # Re-match wines (interactive)
+make generate # Regenerate HTML pages
+make update   # Full pipeline: scrape → match → generate → restart
+make logs     # View server logs
 ```
 
-### Fix a Missing Image
+### Add a New Toplist
 ```bash
-make fix-image ID=toplist_vivino_under_100_21 URL=https://images.vivino.com/thumbs/xxx.png
+make scrape-url # Prompts for URL
+make match      # Prompts: match all or specific list
 make generate
 ```
 
 ## 📋 Available Commands
 
+All commands are interactive when run without arguments.
+
 ### Data Pipeline
 ```bash
-make scrape                 # Scrape default Vivino toplist (interactive)
-make scrape-url URL=<url>   # Scrape specific Vivino toplist URL
-make match                  # Match scraped wines with Systembolaget
-make generate               # Generate static HTML site from JSON data
-make update                 # Full pipeline: scrape → match → generate → restart
-```
+make scrape                    # Interactive: prompts for selection
+make scrape ALL=1              # Non-interactive: scrape all toplists
+make scrape LIST=<id>          # Non-interactive: scrape specific toplist
 
-### Image Management
-```bash
-make fix-images             # Fix missing images interactively
-make fix-image ID=<id> URL=<url>  # Set specific wine image
-```
+make scrape-url                # Interactive: prompts for URL
+make scrape-url URL=<url>      # Non-interactive: add specific URL
 
-Example:
-```bash
-make fix-image ID=toplist_vivino_under_100_21 URL=https://images.vivino.com/thumbs/xxx_pb_x300.png
+make match                     # Interactive: prompts for selection
+make match ALL=1               # Non-interactive: match all toplists
+make match LIST=<id>           # Non-interactive: match specific toplist
+
+make fix-image                 # Interactive: prompts for ID and URL
+make fix-image ID=<id> URL=<url>  # Non-interactive
+
+make generate                  # Generate static HTML site
+make update                    # Full pipeline (non-interactive): scrape → match → generate → restart
 ```
 
 ### Server Management
+
 ```bash
-make build      # Build Docker images
-make start      # Start the web server (http://localhost:8005)
-make stop       # Stop all containers
-make restart    # Restart the web server
-make logs       # View web server logs
-make shell      # Open shell in container
-make clean      # Remove generated files and containers
-make rebuild    # Full rebuild and restart
-```
-
-## 📁 Project Structure
-
-```
-best_wines/
-├── app/
-│   ├── static/              # CSS, JS assets
-│   ├── static_site/         # Generated HTML (output)
-│   ├── templates/           # Jinja2 templates
-│   ├── static_server.py     # FastAPI static server
-│   ├── static_site_generator.py  # Site generator
-│   └── json_storage.py      # JSON data helpers
-├── data/
-│   ├── wines.json           # Wine data
-│   ├── matches.json         # Wine-Systembolaget matches
-│   ├── toplists.json        # Toplist metadata
-│   └── stats.json           # Statistics
-├── docker-compose.yaml
-├── Dockerfile.web
-└── Makefile
+make build   # Build Docker images
+make start   # Start the web server (http://localhost:8005)
+make stop    # Stop all containers
+make restart # Restart the web server
+make logs    # View web server logs
+make shell   # Open shell in container
+make clean   # Remove generated files and containers
+make rebuild # Full rebuild and restart
 ```
 
 ## 🔄 Updating Content
 
 ### Full Data Refresh
-Scrape new wines from Vivino and match with Systembolaget:
+
+Re-scrape all toplists, re-match with Systembolaget, and regenerate site:
 ```bash
-make update     # Full pipeline: scrape → match → generate → restart
+make update # Full pipeline: scrape → match → generate → restart
 ```
 
 ### Adding a New Toplist
+
 ```bash
-make scrape-url URL=https://www.vivino.com/toplists/your-toplist-here
-make match
-make generate
-make restart
-```
-
-### Fix Missing Wine Images
-
-**Finding the Wine ID:**
-The wine ID format is `toplist_<toplist_id>_<rank>`. You can find it:
-- In the browser URL: `http://localhost:8005/wine/toplist_vivino_under_100_21`
-- From the wine detail page title
-
-**Finding the Image URL:**
-1. Go to the wine page on [Vivino.com](https://www.vivino.com)
-2. Right-click on the wine bottle image
-3. Select "Copy image address"
-4. The URL should look like: `https://images.vivino.com/thumbs/xxxxxx_pb_x300.png`
-
-**Commands:**
-```bash
-# Interactive mode - prompts for each missing image
-make fix-images
-
-# Direct mode - set specific wine image
-make fix-image ID=toplist_vivino_under_100_21 URL=https://images.vivino.com/thumbs/xxx_pb_x300.png
-
-# Then regenerate the site
+make scrape-url # Prompts for Vivino URL
+make match      # Select the new toplist when prompted
 make generate
 ```
 
-**Example workflow:**
+### Refresh Existing Toplists Only
 ```bash
-# 1. Find the wine that needs an image
-#    Visit: http://localhost:8005/wine/toplist_vivino_under_100_21
-#    Note: Shows "No image available"
+make scrape   # Prompts: scrape all or specific toplist
+make match    # Prompts: match all or specific toplist
+make generate # Regenerate HTML
+```
 
-# 2. Find the Vivino image URL
-#    Search Vivino for "Giacosa Fratelli Nebbiolo"
-#    Right-click bottle image → Copy image address
+### Data Management
+```bash
+make clear-toplist         # Interactive: prompts for selection
+make clear-toplist ID=<id> # Non-interactive: remove specific toplist
 
-# 3. Set the image
-make fix-image ID=toplist_vivino_under_100_21 URL=https://images.vivino.com/thumbs/abc123_pb_x300.png
+make clear-data            # Interactive: prompts for confirmation
+make clear-data YES=1      # Non-interactive: remove all data
 
-# 4. Regenerate site
-make generate
+make clear-toplists        # Interactive: prompts for confirmation
+make clear-toplists YES=1  # Non-interactive: remove all toplists
 ```
 
 ### After Manual JSON Edits
+
 ```bash
-make generate   # Regenerate HTML
-make restart    # Restart server
+make generate # Regenerate HTML
+make restart  # Restart server
 ```
 
 ## ⚙️ Configuration
@@ -179,26 +134,6 @@ Optional environment variables for development:
 # Telegram Notifications (for data pipeline)
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_CHAT_ID=your_telegram_chat_id
-```
-
-## 🎨 Design
-
-Modern, clean UI inspired by qui design system:
-- Light theme optimized for wine images
-- Color-coded match percentage badges
-- Emoji-based food pairings
-- Responsive mobile design
-- Smooth transitions and shadows
-
-## 🛠️ Development
-
-### Local Development (without Docker)
-
-```bash
-cd app
-pip install -r requirements_web.txt
-python static_site_generator.py  # Generate site
-python -m uvicorn static_server:app --reload --port 8000
 ```
 
 ### Template Changes
@@ -241,7 +176,3 @@ make generate
   }
 }
 ```
-
----
-
-**Enjoy discovering amazing wines! 🍷**

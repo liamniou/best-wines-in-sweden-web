@@ -66,15 +66,22 @@ REGION_WORDS = {
     # French
     'cotes', 'cote', 'du', 'rhone', 'rhône', 'bordeaux', 'bourgogne', 'burgundy',
     'languedoc', 'provence', 'loire', 'alsace', 'champagne', 'beaujolais',
+    'clape', 'corbieres', 'minervois', 'faugeres', 'limoux', 'cabardes',
     # Italian
     'alba', 'asti', 'barolo', 'barbaresco', 'chianti', 'toscana', 'tuscany',
     'piemonte', 'piedmont', 'veneto', 'sicilia', 'sicily', 'puglia', 'langhe',
+    'montalcino', 'montepulciano', 'valpolicella', 'bolgheri', 'montefalco',
+    'acqui', 'abruzzo', 'umbria', 'friuli', 'trentino', 'alto', 'adige',
     # Spanish
     'rioja', 'ribera', 'duero', 'priorat', 'rueda', 'rias', 'baixas', 'penedes',
+    'jumilla', 'toro', 'somontano', 'navarra', 'calatayud',
+    # Portuguese
+    'douro', 'alentejo', 'vinho', 'verde', 'dao', 'bairrada',
     # Other
-    'douro', 'alentejo', 'vinho', 'verde', 'marlborough', 'barossa', 'napa',
+    'marlborough', 'barossa', 'napa', 'sonoma', 'mendoza',
     # Common additions
     'sur', 'lie', 'village', 'villages', 'premier', 'cru', 'grand',
+    'classico', 'superiore', 'riserva', 'reserva',
 }
 
 # Generic wine words that shouldn't heavily influence matching
@@ -133,12 +140,16 @@ def translate_terms(text: str) -> str:
 def clean_wine_name(name: str, remove_descriptors: bool = False) -> str:
     """Clean wine name for searching.
     
-    Learning: Remove vintage years, N.V., and optionally descriptors like "Tinto"
+    Learning: Remove vintage years, N.V., grape varieties in parentheses, and optionally descriptors
     """
     if not name:
         return ""
     
     cleaned = name
+    
+    # Remove grape varieties in parentheses - e.g., "(Tempranillo)" in "Rioja Reserva (Tempranillo)"
+    # These are metadata, not part of the wine name on Systembolaget
+    cleaned = re.sub(r'\s*\([^)]*\)', '', cleaned)
     
     # Remove years (e.g., 2018, 2021)
     cleaned = re.sub(r'\b(19|20)\d{2}\b', '', cleaned)
@@ -165,14 +176,16 @@ def calculate_match_score(vivino_name: str, sb_name: str, winery: str = None, sb
     
     Key insight from manual matching:
     - Distinctive words in the wine name MUST match (e.g., "Crianza", "Leunin", "Raimonda")
-    - Winery/producer matching is a bonus, but not enough alone
+    - Winery/producer MUST match when specified (reject Corte Volponi when looking for Zenato)
     - If Vivino says "Crianza" but SB says "Reserva", that's a BAD match
+    - Word order can vary: "Braida Brachetto" matches "Brachetto Braida"
     
     Scoring:
-    1. Required: Key wine name words must match (returns 0 if not)
-    2. Producer match bonus: +25 points
-    3. Winery in name bonus: +25 points  
-    4. Word coverage bonus: up to 50 points
+    1. Required: Winery/producer must match if specified (returns 0 if not)
+    2. Required: Key wine name words must match (returns 0 if not)
+    3. Producer match bonus: +25 points
+    4. Winery in name bonus: +25 points  
+    5. Word coverage bonus: up to 50 points
     
     Total max: 100 points
     """
@@ -198,6 +211,26 @@ def calculate_match_score(vivino_name: str, sb_name: str, winery: str = None, sb
     if winery:
         winery_words = set(normalize_text(clean_wine_name(winery)).split())
     
+    sb_words_set = set(words_sb)
+    
+    # CRITICAL: If winery is specified, it MUST appear in SB product (name OR producer)
+    # This prevents matching "Zenato Ripassa" with "Corte Volponi Valpolicella"
+    if winery_words:
+        sb_producer_words = set()
+        if sb_producer:
+            sb_producer_words = set(normalize_text(clean_wine_name(sb_producer)).split())
+        
+        # Check if winery appears in SB name or producer
+        winery_in_name = bool(winery_words & sb_words_set)
+        winery_in_producer = bool(winery_words & sb_producer_words)
+        
+        logger.debug(f"    Winery check: {winery_words} in name={winery_in_name}, in producer={winery_in_producer}")
+        
+        if not winery_in_name and not winery_in_producer:
+            # Winery not found - this is likely a wrong match
+            logger.debug(f"    ❌ REJECTED: Winery {winery_words} not in name {sb_words_set} or producer {sb_producer_words}")
+            return 0.0  # Reject this match
+    
     # CRITICAL: Identify distinctive wine name words (not winery, not generic, not region)
     # These are words like "Crianza", "Leunin", "Raimonda", "Saint-Esprit", "Parallele 45"
     distinctive_vivino = [w for w in words_vivino 
@@ -205,8 +238,6 @@ def calculate_match_score(vivino_name: str, sb_name: str, winery: str = None, sb
                           and w not in winery_words
                           and w not in REGION_WORDS
                           and len(w) >= 3]  # Skip very short words
-    
-    sb_words_set = set(words_sb)
     
     # Check for grape variety mismatch - if Vivino specifies a grape, SB must match
     vivino_grapes = set(words_vivino) & GRAPE_VARIETIES
@@ -333,22 +364,50 @@ async def search_systembolaget(wine_name: str, winery: str = None) -> Optional[D
         if search_winery and search_name_simple:
             search_queries.append(f"{search_winery} {search_name_simple}")
         
-        # 2. Just winery name (for wines like "19 Crimes" where winery IS the name)
+        # 2. Wine name + winery (reversed - Systembolaget sometimes uses this order)
+        # e.g., "Brachetto d'Acqui Braida" instead of "Braida Brachetto d'Acqui"
+        if search_winery and search_name_simple:
+            search_queries.append(f"{search_name_simple} {search_winery}")
+        
+        # 3. Just winery name (for wines like "19 Crimes" where winery IS the name)
         if search_winery:
             search_queries.append(search_winery)
         
-        # 3. Wine name alone
+        # 4. Wine name alone (for cases where winery name differs on Systembolaget)
         if search_name:
             search_queries.append(search_name)
         
-        # 4. Wine name without descriptors
+        # 5. Wine name without descriptors
         if search_name_simple and search_name_simple != search_name:
             search_queries.append(search_name_simple)
         
-        # 5. First two words of wine name (often the distinctive part)
+        # 6. First two words of wine name (often the distinctive part)
         name_parts = search_name_simple.split()
         if len(name_parts) >= 2:
             search_queries.append(' '.join(name_parts[:2]))
+        
+        # 7. Key distinctive words from wine name
+        distinctive_words = [w for w in name_parts 
+                            if w.lower() not in GENERIC_WORDS 
+                            and w.lower() not in REGION_WORDS
+                            and len(w) >= 4]
+        if distinctive_words and len(distinctive_words) <= 3:
+            search_queries.append(' '.join(distinctive_words))
+        
+        # 8. Distinctive words from winery name
+        # Helps find "Château L'Hospitalet" when sold under "Gérard Bertrand"
+        if search_winery:
+            winery_parts = search_winery.split()
+            distinctive_winery = [w for w in winery_parts 
+                                 if w.lower() not in GENERIC_WORDS 
+                                 and w.lower() not in REGION_WORDS
+                                 and len(w) >= 4]
+            if distinctive_winery:
+                # Search winery distinctive words alone
+                search_queries.append(' '.join(distinctive_winery))
+                # Also combine with wine distinctive words
+                if distinctive_words:
+                    search_queries.append(f"{' '.join(distinctive_winery)} {' '.join(distinctive_words[:2])}")
         
         # Remove duplicates while preserving order
         seen = set()
@@ -358,100 +417,114 @@ async def search_systembolaget(wine_name: str, winery: str = None) -> Optional[D
                 seen.add(q)
                 unique_queries.append(q)
         
-        for query in unique_queries:
-            logger.debug(f"  Searching: '{query}'")
-            
-            try:
-                response = await client.get(
-                    "https://api-extern.systembolaget.se/sb-api-ecommerce/v1/productsearch/search",
-                    headers={"ocp-apim-subscription-key": SUBSCRIPTION_KEY},
-                    params={
+        # Try with 750ml filter first, then fallback to all volumes
+        volume_configs = [
+            {"volume.min": 700, "volume.max": 800},  # Prefer 750ml
+            {}  # Fallback: all volumes (for wines only available in 375ml etc)
+        ]
+        
+        for volume_config in volume_configs:
+            # If we already have a good match from 750ml search, skip fallback
+            if best_match and best_score >= 50:
+                break
+                
+            for query in unique_queries:
+                logger.debug(f"  Searching: '{query}'")
+                
+                try:
+                    # Build params with optional volume filter
+                    params = {
                         "page": 1,
                         "size": 10,
                         "sortBy": "Score",
                         "sortDirection": "Ascending",
                         "textQuery": query,
-                        "volume.min": 700,  # Allow 700-800ml to catch 750ml bottles
-                        "volume.max": 800,
                         "categoryLevel1": "Vin"
                     }
-                )
+                    params.update(volume_config)
+                    
+                    response = await client.get(
+                        "https://api-extern.systembolaget.se/sb-api-ecommerce/v1/productsearch/search",
+                        headers={"ocp-apim-subscription-key": SUBSCRIPTION_KEY},
+                        params=params
+                    )
                 
-                if response.status_code != 200:
-                    logger.warning(f"API returned {response.status_code}")
-                    continue
-                
-                products = response.json().get("products", [])
-                
-                for product in products:
-                    # Skip non-750ml bottles
-                    volume = product.get('volume')
-                    if volume and volume < 700:
+                    if response.status_code != 200:
+                        logger.warning(f"API returned {response.status_code}")
                         continue
                     
-                    # Learning: Prefer glass bottles over paper packaging (tetrapack/bag-in-box)
-                    packaging = (product.get('packagingLevel1') or '').lower()
-                    is_glass_bottle = 'glas' in packaging or 'flaska' in packaging
-                    is_paper = 'papp' in packaging or 'bag' in packaging or 'box' in packaging
+                    products = response.json().get("products", [])
                     
-                    name_bold = product.get('productNameBold') or ''
-                    name_thin = product.get('productNameThin') or ''
-                    sb_name = f"{name_bold} {name_thin}".strip()
-                    sb_producer = product.get('producerName', '')
-                    
-                    # Calculate score with producer validation
-                    score = calculate_match_score(
-                        vivino_name=wine_name,
-                        sb_name=sb_name,
-                        winery=winery,
-                        sb_producer=sb_producer
-                    )
-                    
-                    # Also try matching full vivino name (winery + wine)
-                    if winery:
-                        full_vivino_name = f"{winery} {wine_name}"
-                        score2 = calculate_match_score(
-                            vivino_name=full_vivino_name,
+                    for product in products:
+                        volume = product.get('volume')
+                        
+                        # Learning: Prefer glass bottles over paper packaging (tetrapack/bag-in-box)
+                        packaging = (product.get('packagingLevel1') or '').lower()
+                        is_glass_bottle = 'glas' in packaging or 'flaska' in packaging
+                        is_paper = 'papp' in packaging or 'bag' in packaging or 'box' in packaging
+                        
+                        name_bold = product.get('productNameBold') or ''
+                        name_thin = product.get('productNameThin') or ''
+                        sb_name = f"{name_bold} {name_thin}".strip()
+                        sb_producer = product.get('producerName', '')
+                        
+                        # Calculate score with producer validation
+                        score = calculate_match_score(
+                            vivino_name=wine_name,
                             sb_name=sb_name,
                             winery=winery,
                             sb_producer=sb_producer
                         )
-                        score = max(score, score2)
+                        
+                        # Also try matching full vivino name (winery + wine)
+                        if winery:
+                            full_vivino_name = f"{winery} {wine_name}"
+                            score2 = calculate_match_score(
+                                vivino_name=full_vivino_name,
+                                sb_name=sb_name,
+                                winery=winery,
+                                sb_producer=sb_producer
+                            )
+                            score = max(score, score2)
+                        
+                        # Adjust score based on packaging and volume
+                        adjusted_score = score
+                        if is_glass_bottle:
+                            adjusted_score += 5
+                        elif is_paper:
+                            adjusted_score -= 10  # Strong penalty for paper packaging
+                        
+                        # Penalty for small bottles (< 700ml) to prefer standard size
+                        if volume and volume < 700:
+                            adjusted_score -= 5
+                        
+                        if adjusted_score > best_score and score >= 40:  # Minimum 40% base match
+                            logger.debug(f"    New best: {sb_name} ({score:.1f}%, {volume}ml)")
+                            best_score = adjusted_score
+                            best_match = {
+                                'product_number': product.get('productNumber'),
+                                'name_bold': name_bold,
+                                'name_thin': name_thin,
+                                'full_name': sb_name,
+                                'price': product.get('price'),
+                                'country': product.get('country'),
+                                'region': product.get('originLevel1'),  # Region metadata
+                                'producer': sb_producer,
+                                'year': product.get('vintage') or product.get('year'),
+                                'alcohol_percentage': product.get('alcoholPercentage'),
+                                'category_level2': product.get('categoryLevel2'),
+                                'volume': volume,
+                                'packaging': packaging,
+                                'match_score': score  # Original score without packaging adjustment
+                            }
                     
-                    # Learning: Prefer glass bottles over paper packaging
-                    # Add a small bonus for glass, penalty for paper
-                    adjusted_score = score
-                    if is_glass_bottle:
-                        adjusted_score += 5
-                    elif is_paper:
-                        adjusted_score -= 10  # Strong penalty for paper packaging
-                    
-                    if adjusted_score > best_score and score >= 40:  # Minimum 40% base match
-                        best_score = adjusted_score
-                        best_match = {
-                            'product_number': product.get('productNumber'),
-                            'name_bold': name_bold,
-                            'name_thin': name_thin,
-                            'full_name': sb_name,
-                            'price': product.get('price'),
-                            'country': product.get('country'),
-                            'region': product.get('originLevel1'),  # Region metadata
-                            'producer': sb_producer,
-                            'year': product.get('vintage') or product.get('year'),
-                            'alcohol_percentage': product.get('alcoholPercentage'),
-                            'category_level2': product.get('categoryLevel2'),
-                            'volume': volume,
-                            'packaging': packaging,
-                            'match_score': score  # Original score without packaging adjustment
-                        }
-                
-                # Stop if we have a great match (80+)
-                if best_match and best_score >= 80:
-                    break
-                    
-            except Exception as e:
-                logger.error(f"Error searching Systembolaget: {e}")
-                continue
+                    # Stop if we have a great match (80+)
+                    if best_match and best_score >= 80:
+                        break
+                        
+                except Exception as e:
+                    logger.error(f"Error searching Systembolaget: {e}")
+                    continue
         
         return best_match
 
@@ -544,13 +617,14 @@ async def get_verified_product(product_number: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def match_toplist_wines(clear_existing: bool = True):
-    """Match all wines from scraped toplists with Systembolaget products.
+async def match_toplist_wines(clear_existing: bool = True, toplist_id: str = None):
+    """Match wines from scraped toplists with Systembolaget products.
     
     Uses verified matches when available, falls back to algorithm.
     
     Args:
         clear_existing: If True, clear existing wines/matches before adding new ones
+        toplist_id: If specified, only match wines from this toplist
     """
     
     # Load verified matches first
@@ -563,7 +637,20 @@ async def match_toplist_wines(clear_existing: bool = True):
         return
     
     with open(toplists_file, 'r', encoding='utf-8') as f:
-        toplists = json.load(f)
+        all_toplists = json.load(f)
+    
+    # Filter to specific toplist if requested
+    if toplist_id:
+        toplists = [t for t in all_toplists if t.get('id') == toplist_id]
+        if not toplists:
+            logger.error(f"Toplist not found: {toplist_id}")
+            logger.info("Available toplists:")
+            for t in all_toplists:
+                logger.info(f"  - {t.get('id')}: {t.get('name')}")
+            return
+        logger.info(f"Matching specific toplist: {toplist_id}")
+    else:
+        toplists = all_toplists
     
     # Load or initialize wines/matches
     wines_file = DATA_DIR / "wines.json"
@@ -696,9 +783,15 @@ async def match_toplist_wines(clear_existing: bool = True):
         json.dump(all_matches, f, indent=2, ensure_ascii=False)
     logger.info(f"Saved {len(all_matches)} matches to matches.json")
     
-    # Save updated toplists
+    # Save updated toplists (merge with unprocessed ones if filtering)
+    if toplist_id:
+        # Keep toplists we didn't process
+        final_toplists = [t for t in all_toplists if t.get('id') != toplist_id] + updated_toplists
+    else:
+        final_toplists = updated_toplists
+    
     with open(toplists_file, 'w', encoding='utf-8') as f:
-        json.dump(updated_toplists, f, indent=2, ensure_ascii=False)
+        json.dump(final_toplists, f, indent=2, ensure_ascii=False)
     logger.info(f"Updated {len(updated_toplists)} toplists")
     
     logger.info(f"\n{'='*60}")
@@ -707,4 +800,23 @@ async def match_toplist_wines(clear_existing: bool = True):
 
 
 if __name__ == "__main__":
-    asyncio.run(match_toplist_wines(clear_existing=True))
+    import sys
+    
+    toplist_id = None
+    if len(sys.argv) > 1:
+        if sys.argv[1] == '--list' and len(sys.argv) > 2:
+            toplist_id = sys.argv[2]
+        elif sys.argv[1] == '--help':
+            print("Usage:")
+            print("  python match_toplist_wines.py                  # Match all toplists")
+            print("  python match_toplist_wines.py --list <id>      # Match specific toplist")
+            print("")
+            print("Examples:")
+            print("  python match_toplist_wines.py --list vivino_under_100")
+            sys.exit(0)
+        else:
+            print(f"Unknown argument: {sys.argv[1]}")
+            print("Use --help for usage information")
+            sys.exit(1)
+    
+    asyncio.run(match_toplist_wines(clear_existing=True, toplist_id=toplist_id))
