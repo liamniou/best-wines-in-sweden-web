@@ -26,5 +26,6 @@ httpx==0.25.2
 selectolax==0.3.17
 
 # Headless browser for JS-rendered pages
+playwright==1.58.0
 camoufox[geoip]==0.4.11
 browserforge==1.2.1
