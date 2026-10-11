@@ -1,7 +1,7 @@
 # Web Application Requirements for Best Wines Sweden (Static Version)
 
 # Core web framework
-fastapi==0.104.1
+fastapi==0.143.0
 uvicorn[standard]==0.24.0
 
 # Template engine (for static site generation)
