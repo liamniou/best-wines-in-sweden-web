@@ -14,7 +14,7 @@ aiofiles==23.2.1
 anyio==3.7.1
 
 # Data processing
-python-multipart==0.0.6
+python-multipart==0.0.32
 
 # Pydantic for data validation
 pydantic==2.5.0
