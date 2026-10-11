@@ -20,7 +20,7 @@ python-multipart==0.0.6
 pydantic==2.5.0
 
 # HTTP client for scraping
-httpx==0.25.2
+httpx==0.28.1
 
 # HTML parser for scraping
 selectolax==0.3.17
