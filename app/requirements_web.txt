@@ -23,7 +23,7 @@ pydantic==2.5.0
 httpx==0.25.2
 
 # HTML parser for scraping
-selectolax==0.3.17
+selectolax==1.0.0
 
 # Headless browser for JS-rendered pages
 playwright==1.58.0
