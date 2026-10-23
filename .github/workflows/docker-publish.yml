@@ -33,6 +33,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/best-wines-in-sweden-web
           tags: |
+            type=raw,value={{date 'YYYY.M.D'}}.${{ github.run_number }},enable={{is_default_branch}}
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
             type=ref,event=branch
